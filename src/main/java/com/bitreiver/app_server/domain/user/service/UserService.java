@@ -8,8 +8,10 @@ import com.bitreiver.app_server.domain.user.dto.UserSignUpRequest;
 import java.util.UUID;
 
 public interface UserService {
-    AuthResponse signUp(UserSignUpRequest request);
+    void signUp(UserSignUpRequest request);
     AuthResponse login(UserLoginRequest request);
+    void logout(UUID userId);
+    boolean checkNicknameAvailable(String nickname);
     UserResponse getCurrentUser(UUID userId);
 }
 

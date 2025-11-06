@@ -27,7 +27,9 @@ public class UserServiceImpl implements UserService {
     
     @Override
     @Transactional
-    public AuthResponse signUp(UserSignUpRequest request) {
+    public void signUp(UserSignUpRequest request) {
+        validateNickname(request.getNickname());
+        
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
@@ -48,17 +50,6 @@ public class UserServiceImpl implements UserService {
             .build();
         
         userRepository.save(user);
-        
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getId());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
-        
-        return AuthResponse.builder()
-            .userId(user.getId())
-            .email(user.getEmail())
-            .nickname(user.getNickname())
-            .accessToken(accessToken)
-            .refreshToken(refreshToken)
-            .build();
     }
     
     @Override
@@ -88,6 +79,40 @@ public class UserServiceImpl implements UserService {
             .accessToken(accessToken)
             .refreshToken(refreshToken)
             .build();
+    }
+    
+    @Override
+    @Transactional
+    public void logout(UUID userId) {
+        // 사용자 존재 여부 확인
+        if (!userRepository.existsById(userId)) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+        
+        // 로그아웃 처리 (향후 토큰 블랙리스트 기능 추가 가능)
+        // 현재는 클라이언트에서 토큰을 삭제하는 방식으로 처리
+    }
+    
+    @Override
+    public boolean checkNicknameAvailable(String nickname) {
+        validateNickname(nickname);
+        return !userRepository.existsByNickname(nickname);
+    }
+    
+    private void validateNickname(String nickname) {
+        if (nickname == null || nickname.length() > 20) {
+            throw new CustomException(ErrorCode.INVALID_NICKNAME);
+        }
+        
+        for (char c : nickname.toCharArray()) {
+            if (isHangulJamo(c)) {
+                throw new CustomException(ErrorCode.INVALID_NICKNAME);
+            }
+        }
+    }
+    
+    private boolean isHangulJamo(char c) {
+        return (c >= 0x3131 && c <= 0x314E) || (c >= 0x314F && c <= 0x3163);
     }
     
     @Override
