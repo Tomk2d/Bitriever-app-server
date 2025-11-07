@@ -1,5 +1,6 @@
 package com.bitreiver.app_server.domain.trading.dto;
 
+import com.bitreiver.app_server.domain.coin.dto.CoinResponse;
 import com.bitreiver.app_server.domain.trading.entity.TradingHistory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -53,6 +54,9 @@ public class TradingHistoryResponse {
     @Schema(description = "생성 일시", example = "2024-01-01T00:00:00")
     private LocalDateTime createdAt;
     
+    @Schema(description = "코인 정보")
+    private CoinResponse coin;
+    
     public static TradingHistoryResponse from(TradingHistory history) {
         return TradingHistoryResponse.builder()
             .id(history.getId())
@@ -67,6 +71,24 @@ public class TradingHistoryResponse {
             .fee(history.getFee())
             .tradeTime(history.getTradeTime())
             .createdAt(history.getCreatedAt())
+            .build();
+    }
+    
+    public static TradingHistoryResponse from(TradingHistory history, CoinResponse coin) {
+        return TradingHistoryResponse.builder()
+            .id(history.getId())
+            .userId(history.getUserId())
+            .coinId(history.getCoinId())
+            .exchangeCode(history.getExchangeCode())
+            .tradeUuid(history.getTradeUuid())
+            .tradeType(history.getTradeType())
+            .price(history.getPrice())
+            .quantity(history.getQuantity())
+            .totalPrice(history.getTotalPrice())
+            .fee(history.getFee())
+            .tradeTime(history.getTradeTime())
+            .createdAt(history.getCreatedAt())
+            .coin(coin)
             .build();
     }
 }

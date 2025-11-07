@@ -1,5 +1,6 @@
 package com.bitreiver.app_server.domain.trading.controller;
 
+import com.bitreiver.app_server.domain.trading.dto.TradingHistoryDateRangeRequest;
 import com.bitreiver.app_server.domain.trading.dto.TradingHistoryResponse;
 import com.bitreiver.app_server.domain.trading.service.TradingHistoryService;
 import com.bitreiver.app_server.global.common.dto.PageResponse;
@@ -9,13 +10,12 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,21 +51,18 @@ public class TradingHistoryController {
     @Operation(summary = "기간별 매매 내역 조회", description = "현재 로그인한 사용자의 매매 내역을 시작일과 종료일 기준으로 조회합니다.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 날짜 형식"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 날짜 형식 또는 날짜 범위"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요")
     })
     @SecurityRequirement(name = "JWT")
-    @GetMapping("/range")
+    @PostMapping("/range")
     public ApiResponse<List<TradingHistoryResponse>> getUserTradingHistoriesByDateRange(
         Authentication authentication,
-        @Parameter(description = "시작 날짜 및 시간 (ISO 8601 형식)", example = "2025-07-01T00:00:00", required = true)
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-        @Parameter(description = "종료 날짜 및 시간 (ISO 8601 형식, 미포함)", example = "2025-08-01T00:00:00", required = true)
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate
+        @Valid @RequestBody TradingHistoryDateRangeRequest request
     ) {
         UUID userId = UUID.fromString(authentication.getName());
         List<TradingHistoryResponse> response = tradingHistoryService.getUserTradingHistoriesByDateRange(
-            userId, startDate, endDate
+            userId, request.getStartDate(), request.getEndDate()
         );
         return ApiResponse.success(response);
     }

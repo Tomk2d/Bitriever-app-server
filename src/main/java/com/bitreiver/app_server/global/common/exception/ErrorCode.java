@@ -36,6 +36,7 @@ public enum ErrorCode {
     
     // 매매 내역
     TRADING_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "TRADING_HISTORY_NOT_FOUND", "매매 내역을 찾을 수 없습니다."),
+    INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "INVALID_DATE_RANGE", "시작 날짜는 종료 날짜보다 이전이어야 합니다."),
     
     // 매매 일지
     DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "DIARY_NOT_FOUND", "매매 일지를 찾을 수 없습니다."),
