@@ -60,6 +60,12 @@ public class TradingHistory {
     @Column(name = "trade_time", nullable = false)
     private LocalDateTime tradeTime;
     
+    @Column(name = "profit_loss_rate", precision = 5, scale = 2)
+    private BigDecimal profitLossRate;
+    
+    @Column(name = "avg_buy_price", precision = 20, scale = 8)
+    private BigDecimal avgBuyPrice;
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 }

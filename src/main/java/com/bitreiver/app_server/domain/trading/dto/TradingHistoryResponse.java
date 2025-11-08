@@ -51,6 +51,12 @@ public class TradingHistoryResponse {
     @Schema(description = "거래 일시", example = "2024-01-01T00:00:00")
     private LocalDateTime tradeTime;
     
+    @Schema(description = "상승하락률 (0.50% 상승 = 0.50, 50% 상승 = 50, 50% 하락 = -50)", example = "0.50", nullable = true)
+    private BigDecimal profitLossRate;
+    
+    @Schema(description = "구매 시 평균 단가 (매도 시에만 값 존재)", example = "50000.0", nullable = true)
+    private BigDecimal avgBuyPrice;
+    
     @Schema(description = "생성 일시", example = "2024-01-01T00:00:00")
     private LocalDateTime createdAt;
     
@@ -70,6 +76,8 @@ public class TradingHistoryResponse {
             .totalPrice(history.getTotalPrice())
             .fee(history.getFee())
             .tradeTime(history.getTradeTime())
+            .profitLossRate(history.getProfitLossRate())
+            .avgBuyPrice(history.getAvgBuyPrice())
             .createdAt(history.getCreatedAt())
             .build();
     }
@@ -87,6 +95,8 @@ public class TradingHistoryResponse {
             .totalPrice(history.getTotalPrice())
             .fee(history.getFee())
             .tradeTime(history.getTradeTime())
+            .profitLossRate(history.getProfitLossRate())
+            .avgBuyPrice(history.getAvgBuyPrice())
             .createdAt(history.getCreatedAt())
             .coin(coin)
             .build();
