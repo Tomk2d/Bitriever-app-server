@@ -1,5 +1,6 @@
 package com.bitreiver.app_server.global.security.jwt;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -64,6 +65,21 @@ public class JwtTokenProvider {
                 .verifyWith(key)
                 .build()
                 .parseSignedClaims(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    public boolean isTokenExpired(String token) {
+        try {
+            SecretKey key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+            Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token);
+            return false;
+        } catch (ExpiredJwtException e) {
             return true;
         } catch (Exception e) {
             return false;
