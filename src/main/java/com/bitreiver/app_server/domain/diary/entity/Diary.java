@@ -1,5 +1,6 @@
 package com.bitreiver.app_server.domain.diary.entity;
 
+import com.bitreiver.app_server.domain.diary.enums.TradingMind;
 import com.vladmihalcea.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -36,5 +37,9 @@ public class Diary {
     
     @Column(name = "tags", columnDefinition = "text[]")
     private List<String> tags;
+    
+    @Convert(converter = com.bitreiver.app_server.domain.diary.converter.TradingMindConverter.class)
+    @Column(name = "trading_mind")
+    private TradingMind tradingMind;
 }
 

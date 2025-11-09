@@ -42,6 +42,7 @@ public class DiaryServiceImpl implements DiaryService {
             .tradingHistoryId(request.getTradingHistoryId())
             .content(request.getContent())
             .tags(request.getTags())
+            .tradingMind(request.getTradingMindAsEnum())
             .build();
         
         diaryRepository.save(diary);
@@ -98,6 +99,10 @@ public class DiaryServiceImpl implements DiaryService {
         
         if (request.getTags() != null) {
             diary.setTags(request.getTags());
+        }
+        
+        if (request.getTradingMind() != null) {
+            diary.setTradingMind(request.getTradingMindAsEnum());
         }
         
         diaryRepository.save(diary);

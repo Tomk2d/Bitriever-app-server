@@ -79,6 +79,9 @@ public class TradingHistoryWithDiaryResponse {
         
         @Schema(description = "태그 배열", example = "[\"스캘핑\", \"분석필요\"]")
         private List<String> tags;
+        
+        @Schema(description = "매매심리 (0:무념무상, 1:확신, 2:약간 확신, 3:기대감, 11:욕심, 12:조급함, 13:불안, 14:두려움)", example = "1", nullable = true)
+        private Integer tradingMind;
     }
     
     public static TradingHistoryWithDiaryResponse from(TradingHistory tradingHistory, Diary diary) {
@@ -103,6 +106,7 @@ public class TradingHistoryWithDiaryResponse {
                 .id(diary.getId())
                 .content(diary.getContent())
                 .tags(diary.getTags())
+                .tradingMind(diary.getTradingMind() != null ? diary.getTradingMind().getCode() : null)
                 .build());
         } else {
             builder.diary(null);

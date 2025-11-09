@@ -1,5 +1,6 @@
 package com.bitreiver.app_server.domain.diary.dto;
 
+import com.bitreiver.app_server.domain.diary.enums.TradingMind;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -19,5 +20,19 @@ public class DiaryRequest {
     
     @Schema(description = "태그 배열", example = "[\"스캘핑\", \"분석필요\"]")
     private List<String> tags;
+    
+    @Schema(description = "매매심리 (0:무념무상, 1:확신, 2:약간 확신, 3:기대감, 11:욕심, 12:조급함, 13:불안, 14:두려움)", example = "1", nullable = true)
+    private Integer tradingMind;
+    
+    public TradingMind getTradingMindAsEnum() {
+        if (tradingMind == null) {
+            return null;
+        }
+        try {
+            return TradingMind.fromCode(tradingMind);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
 }
 
