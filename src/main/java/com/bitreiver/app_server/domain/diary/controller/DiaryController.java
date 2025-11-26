@@ -59,7 +59,7 @@ public class DiaryController {
     @GetMapping("/{id}")
     public ApiResponse<DiaryResponse> getDiaryById(
         Authentication authentication,
-        @PathVariable Integer id
+        @PathVariable("id") Integer id
     ) {
         UUID userId = UUID.fromString(authentication.getName());
         DiaryResponse response = diaryService.getDiaryById(userId, id);
@@ -107,7 +107,7 @@ public class DiaryController {
     @PutMapping("/{id}")
     public ApiResponse<DiaryResponse> updateDiary(
         Authentication authentication,
-        @PathVariable Integer id,
+        @PathVariable("id") Integer id,
         @Valid @RequestBody DiaryRequest request
     ) {
         UUID userId = UUID.fromString(authentication.getName());
@@ -125,7 +125,7 @@ public class DiaryController {
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteDiary(
         Authentication authentication,
-        @PathVariable Integer id
+        @PathVariable("id") Integer id
     ) {
         UUID userId = UUID.fromString(authentication.getName());
         diaryService.deleteDiary(userId, id);
