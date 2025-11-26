@@ -76,7 +76,7 @@ public class DiaryController {
     @GetMapping("/trading-history/{tradingHistoryId}")
     public ApiResponse<DiaryResponse> getDiaryByTradingHistoryId(
         Authentication authentication,
-        @PathVariable Integer tradingHistoryId
+        @PathVariable("tradingHistoryId") Integer tradingHistoryId
     ) {
         UUID userId = UUID.fromString(authentication.getName());
         DiaryResponse response = diaryService.getDiaryByTradingHistoryId(userId, tradingHistoryId);
