@@ -34,8 +34,8 @@ public class AssetController {
     @GetMapping
     public ApiResponse<List<AssetResponse>> getUserAssets(
         Authentication authentication,
-        @Parameter(description = "거래소 코드 (선택)", example = "1")
-        @RequestParam(required = false) Short exchangeCode
+        @Parameter(name = "exchangeCode", description = "거래소 코드 (선택, 1:UPBIT, 2:BITHUMB, 3:COINONE, 11:BINANCE, 12:BYBIT, 13:COINBASE, 14:OKX)", example = "1", required = false)
+        @RequestParam(value = "exchangeCode", required = false) Short exchangeCode
     ) {
         UUID userId = UUID.fromString(authentication.getName());
         
