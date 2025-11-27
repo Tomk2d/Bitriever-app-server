@@ -87,10 +87,24 @@ public class AssetServiceImpl implements AssetService {
             requestBody.put("user_id", userId.toString());
             
             String url = upbitServerUrl + "/api/upbit/accounts";
-            
             restTemplate.postForObject(url, requestBody, String.class);
             
             log.info("자산 동기화 완료: userId={}", userId);
+            
+            // 자산 동기화 후 매매내역도 업데이트
+            try {
+                Map<String, String> tradingHistoryRequestBody = new HashMap<>();
+                tradingHistoryRequestBody.put("user_id", userId.toString());
+                tradingHistoryRequestBody.put("exchange_provider_str", "UPBIT");
+                
+                String tradingHistoryUrl = upbitServerUrl + "/api/user/updateTradingHistory";
+                restTemplate.postForObject(tradingHistoryUrl, tradingHistoryRequestBody, String.class);
+                
+                log.info("매매내역 동기화 완료: userId={}", userId);
+            } catch (Exception e) {
+                // 매매내역 업데이트 실패해도 자산 동기화는 성공했으므로 로그만 남기고 계속 진행
+                log.error("매매내역 동기화 실패 (자산 동기화는 성공): userId={}, error={}", userId, e.getMessage(), e);
+            }
         } catch (Exception e) {
             log.error("자산 동기화 실패: userId={}, error={}", userId, e.getMessage(), e);
         }
