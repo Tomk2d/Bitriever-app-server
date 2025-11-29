@@ -43,16 +43,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 
                 // 토큰 유효성 검증
                 if (jwtTokenProvider.validateToken(token)) {
-                    var userId = jwtTokenProvider.getUserIdFromToken(token);
-                    
-                    UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                            userId,
-                            null,
-                            List.of(new SimpleGrantedAuthority("ROLE_USER"))
-                        );
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                var userId = jwtTokenProvider.getUserIdFromToken(token);
+                
+                UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                        userId,
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                    );
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
                 } else {
                     sendErrorResponse(response, ErrorCode.INVALID_TOKEN);
                     return;
