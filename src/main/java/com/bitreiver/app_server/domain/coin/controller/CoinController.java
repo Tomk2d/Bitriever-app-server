@@ -3,14 +3,19 @@ package com.bitreiver.app_server.domain.coin.controller;
 import com.bitreiver.app_server.domain.coin.dto.CoinResponse;
 import com.bitreiver.app_server.domain.coin.service.CoinService;
 import com.bitreiver.app_server.global.common.response.ApiResponse;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 
 @Slf4j
 @RestController
@@ -44,7 +49,10 @@ public class CoinController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "코인을 찾을 수 없습니다.")
     })
     @GetMapping("/{id}")
-    public ApiResponse<CoinResponse> getCoinById(@PathVariable Integer id) {
+    public ApiResponse<CoinResponse> getCoinById(
+        @Parameter(name = "id", description = "코인 ID", example = "707460", required = true, in = ParameterIn.PATH)
+        @PathVariable Integer id
+    ) {
         log.info("코인 조회 - id: {}", id);
         CoinResponse coin = coinService.getCoinById(id);
         return ApiResponse.success(coin);
