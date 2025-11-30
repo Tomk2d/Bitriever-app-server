@@ -31,18 +31,34 @@ public class CoinController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
     })
     @GetMapping
-    public ApiResponse<List<CoinResponse>> getAllCoins(@RequestParam(required = false) String exchange) {
+    public ApiResponse<List<CoinResponse>> getAllCoins(
+        @Parameter(description = "거래소 이름 (선택)", example = "")
+        @RequestParam(value = "exchange", required = false) String exchange
+    ) {
         if (exchange != null) {
             log.info("거래소별 코인 조회 - exchange: {}", exchange);
             List<CoinResponse> coins = coinService.getCoinsByExchange(exchange);
             return ApiResponse.success(coins);
         }
         
-        log.info("전체 코인 조회");
         List<CoinResponse> coins = coinService.getAllCoins();
         return ApiResponse.success(coins);
     }
-    
+
+    @Operation(summary = "코인 목록 조회 - 거래 통화", description = "거래 통화로 코인 목록을 조회합니다.")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "거래 통화를 찾을 수 없습니다.")
+    })
+    @GetMapping("/quote-currency")
+    public ApiResponse<List<CoinResponse>> getAllCoinsByQuoteCurrency(
+        @Parameter(name = "quoteCurrency", description = "거래 통화", example = "KRW", required = true, in = ParameterIn.QUERY)
+        @RequestParam(value = "quoteCurrency", required = true) String quoteCurrency
+    ) {
+        List<CoinResponse> coins = coinService.getAllCoinsByQuoteCurrency(quoteCurrency);
+        return ApiResponse.success(coins);
+    }
+
     @Operation(summary = "코인 개별 조회", description = "코인 ID로 상세 정보를 조회합니다.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),

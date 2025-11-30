@@ -34,5 +34,11 @@ public class CoinServiceImpl implements CoinService {
         List<Coin> coins = coinRepository.findByExchangeAndIsActive(exchange, true);
         return coins.stream().map(CoinResponse::from).toList();
     }
+
+    @Override
+    public List<CoinResponse> getAllCoinsByQuoteCurrency(String quoteCurrency) {
+        List<Coin> coins = coinRepository.findAllByQuoteCurrencyAndIsActive(quoteCurrency, true);
+        return coins.stream().map(CoinResponse::from).toList();
+    }
 }
 
