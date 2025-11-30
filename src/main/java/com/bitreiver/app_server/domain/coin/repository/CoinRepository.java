@@ -9,8 +9,10 @@ import java.util.Optional;
 
 @Repository
 public interface CoinRepository extends JpaRepository<Coin, Integer> {
-    Optional<Coin> findByMarketCode(String marketCode);
     List<Coin> findByExchangeAndIsActive(String exchange, Boolean isActive);
     List<Coin> findAllByIsActive(Boolean isActive);
+    
+    // Postgresql 의 Partial Index로 quoteCurrency 와 isActive 조건으로 조회
+    List<Coin> findAllByQuoteCurrencyAndIsActive(String quoteCurrency, Boolean isActive);
 }
 

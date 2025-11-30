@@ -8,5 +8,6 @@ public interface CoinService {
     List<CoinResponse> getAllCoins();
     CoinResponse getCoinById(Integer id);
     List<CoinResponse> getCoinsByExchange(String exchange);
+    List<CoinResponse> getAllCoinsByQuoteCurrency(String quoteCurrency);
 }
 
