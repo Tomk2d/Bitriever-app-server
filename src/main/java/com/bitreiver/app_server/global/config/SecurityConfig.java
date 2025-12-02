@@ -36,6 +36,8 @@ public class SecurityConfig {
                     "/api/auth/**", 
                     "/api/coins/**",
                     "/api/coin-prices/day/**",
+                    "/api/coin-prices/ticker/**",  // 코인 현재가 조회 API (인증 없이 공개)
+                    "/ws/**",       // WebSocket은 인증 없이 공개 (주가 데이터)
                     "/health", 
                     "/",
                     "/docs",
@@ -60,10 +62,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*"));
+        // setAllowedOriginPatterns를 사용하면 와일드카드와 credentials를 함께 사용 가능
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
+        // SockJS가 credentials를 포함할 수 있으므로 명시적으로 허용
+        configuration.setAllowCredentials(true);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

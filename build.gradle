@@ -43,6 +43,12 @@ dependencies {
 	
 	// Hibernate Types for JSON
 	implementation 'com.vladmihalcea:hibernate-types-60:2.21.1'
+
+	// WebSocket (STOMP 프로토콜)
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    
+    // WebClient (비동기 HTTP 클라이언트)
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
