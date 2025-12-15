@@ -43,16 +43,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 
                 // 토큰 유효성 검증
                 if (jwtTokenProvider.validateToken(token)) {
-                var userId = jwtTokenProvider.getUserIdFromToken(token);
-                
-                UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                        userId,
-                        null,
-                        List.of(new SimpleGrantedAuthority("ROLE_USER"))
-                    );
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    var userId = jwtTokenProvider.getUserIdFromToken(token);
+                    
+                    UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                            userId,
+                            null,
+                            List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                        );
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
                 } else {
                     sendErrorResponse(response, ErrorCode.INVALID_TOKEN);
                     return;
@@ -67,6 +67,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
     
     private void sendErrorResponse(HttpServletResponse response, ErrorCode errorCode) throws IOException {
+        if (response.isCommitted()) {
+            return;
+        }
+        
+        response.reset();
         response.setStatus(errorCode.getHttpStatus().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
@@ -79,6 +84,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         ApiResponse<?> apiResponse = ApiResponse.error(errorDetail);
         
         objectMapper.writeValue(response.getWriter(), apiResponse);
+        response.getWriter().flush();
     }
     
     private String extractToken(HttpServletRequest request) {
@@ -89,4 +95,3 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 }
-
