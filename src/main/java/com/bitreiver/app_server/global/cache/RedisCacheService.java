@@ -1,90 +1,80 @@
 package com.bitreiver.app_server.global.cache;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
+/**
+ * Redis 캐시 서비스 통합 래퍼
+ * 기존 코드 호환성을 위해 유지
+ * 내부적으로 RedisStringCacheService와 RedisZSetCacheService를 사용
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RedisCacheService {
-    private final ObjectMapper objectMapper;
     
-    @Qualifier("stringRedisReadTemplate")
-    private final StringRedisTemplate stringRedisReadTemplate;
+    private final RedisCacheStringService stringCacheService;
+    private final RedisCacheZSetService zSetCacheService;
     
-    private final StringRedisTemplate stringRedisTemplate;
-    
-    @Value("${cache.coin.ttl:86400}")
-    private long defaultTtl;
+    // ========== String 메서드 (기존 코드 호환) ==========
     
     public <T> Optional<T> get(String key, Class<T> clazz) {
-        try {
-            String cachedValue = stringRedisReadTemplate.opsForValue().get(key);
-            if (cachedValue != null) {
-                T value = objectMapper.readValue(cachedValue, clazz);
-                return Optional.of(value);
-            }
-            log.debug("캐시 미스 - key: {}", key);
-            return Optional.empty();
-        } catch (Exception e) {
-            log.warn("캐시 조회 중 오류 발생 - key: {}, error: {}", key, e.getMessage());
-            return Optional.empty();
-        }
+        return stringCacheService.get(key, clazz);
     }
     
     public <T> Optional<T> get(String key, TypeReference<T> typeReference) {
-        try {
-            String cachedValue = stringRedisReadTemplate.opsForValue().get(key);
-            if (cachedValue != null) {
-                T value = objectMapper.readValue(cachedValue, typeReference);
-                return Optional.of(value);
-            }
-            log.debug("캐시 미스 - key: {}", key);
-            return Optional.empty();
-        } catch (Exception e) {
-            log.warn("캐시 조회 중 오류 발생 - key: {}, error: {}", key, e.getMessage());
-            return Optional.empty();
-        }
+        return stringCacheService.get(key, typeReference);
     }
     
     public void set(String key, Object value) {
-        set(key, value, defaultTtl);
+        stringCacheService.set(key, value);
     }
     
     public void set(String key, Object value, long ttlSeconds) {
-        try {
-            String jsonValue = objectMapper.writeValueAsString(value);
-            stringRedisTemplate.opsForValue().set(key, jsonValue, Duration.ofSeconds(ttlSeconds));
-            log.debug("캐시 저장 완료 - key: {}, ttl: {}초", key, ttlSeconds);
-        } catch (Exception e) {
-            log.warn("캐시 저장 중 오류 발생 - key: {}, error: {}", key, e.getMessage());
-        }
+        stringCacheService.set(key, value, ttlSeconds);
     }
     
     public void delete(String key) {
-        try {
-            stringRedisTemplate.delete(key);
-            log.debug("캐시 삭제 완료 - key: {}", key);
-        } catch (Exception e) {
-            log.warn("캐시 삭제 중 오류 발생 - key: {}, error: {}", key, e.getMessage());
-        }
+        stringCacheService.delete(key);
     }
     
     public boolean exists(String key) {
-        try {
-            return Boolean.TRUE.equals(stringRedisTemplate.hasKey(key));
-        } catch (Exception e) {
-            log.warn("캐시 존재 확인 중 오류 발생 - key: {}, error: {}", key, e.getMessage());
-            return false;
-        }
+        return stringCacheService.exists(key);
+    }
+    
+    // ========== ZSET 메서드 (새로 추가) ==========
+    
+    public void zAdd(String key, Object value, double score) {
+        zSetCacheService.zAdd(key, value, score);
+    }
+    
+    public <T> void zAddAll(String key, List<T> values, Function<T, Double> scoreExtractor, long ttlSeconds) {
+        zSetCacheService.zAddAll(key, values, scoreExtractor, ttlSeconds);
+    }
+    
+    public <T> void zAddAll(String key, List<T> values, Function<T, Double> scoreExtractor) {
+        zSetCacheService.zAddAll(key, values, scoreExtractor);
+    }
+    
+    public <T> List<T> zRangeByScore(String key, double minScore, double maxScore, Class<T> clazz) {
+        return zSetCacheService.zRangeByScore(key, minScore, maxScore, clazz);
+    }
+    
+    public <T> List<T> zRangeAll(String key, Class<T> clazz) {
+        return zSetCacheService.zRangeAll(key, clazz);
+    }
+    
+    public Long zCard(String key) {
+        return zSetCacheService.zCard(key);
+    }
+    
+    public boolean zExists(String key) {
+        return zSetCacheService.zExists(key);
     }
 }
