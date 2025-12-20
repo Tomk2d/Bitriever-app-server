@@ -37,7 +37,7 @@ public class SecurityConfig {
                     "/api/coins/**",
                     "/api/coin-prices/day/**",
                     "/api/coin-prices/ticker/**",  // 코인 현재가 조회 API (인증 없이 공개)
-                    "/api/fear-greed/**",  // 공포/탐욕 지수 API (인증 없이 공개)
+                    "/api/fear-greed/**",  // 공포/탐욕 지수 API (인증 없이 공개) - /today, /history, /{date} 포함
                     "/api/redis-test/**",  // Redis 테스트용 (추가)
                     "/api/longshort/**",  // 롱숏 비율 조회 API (인증 없이 공개)
                     "/ws/**",       // WebSocket은 인증 없이 공개 (주가 데이터)

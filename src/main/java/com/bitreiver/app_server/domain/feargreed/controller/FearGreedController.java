@@ -1,5 +1,6 @@
 package com.bitreiver.app_server.domain.feargreed.controller;
 
+
 import com.bitreiver.app_server.domain.feargreed.dto.FearGreedResponse;
 import com.bitreiver.app_server.domain.feargreed.service.FearGreedService;
 import com.bitreiver.app_server.global.common.response.ApiResponse;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/fear-greed")
@@ -27,7 +29,7 @@ public class FearGreedController {
 
     @Operation(
         summary = "특정 날짜의 공포/탐욕 지수 조회",
-        description = "데이터베이스에서 특정 날짜의 공포/탐욕 지수를 조회합니다. 날짜 형식: yyyy-MM-dd"
+        description = "Redis에서 특정 날짜의 공포/탐욕 지수를 조회합니다. 날짜 형식: yyyy-MM-dd"
     )
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -52,6 +54,42 @@ public class FearGreedController {
     ) {
         FearGreedResponse response = fearGreedService.getByDate(date);
         return ApiResponse.success(response, "조회 성공");
+    }
+    
+    @Operation(
+        summary = "오늘의 공포/탐욕 지수 조회",
+        description = "Redis에서 오늘의 공포/탐욕 지수를 조회합니다."
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "조회 성공"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "오늘의 데이터가 없음"
+        )
+    })
+    @GetMapping("/today")
+    public ApiResponse<FearGreedResponse> getToday() {
+        FearGreedResponse response = fearGreedService.getToday();
+        return ApiResponse.success(response, "오늘의 공포/탐욕 지수 조회 성공");
+    }
+    
+    @Operation(
+        summary = "전체 공포/탐욕 지수 히스토리 조회",
+        description = "Redis에서 어제까지의 전체 공포/탐욕 지수 히스토리를 조회합니다."
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "조회 성공"
+        )
+    })
+    @GetMapping("/history")
+    public ApiResponse<List<FearGreedResponse>> getAllHistory() {
+        List<FearGreedResponse> response = fearGreedService.getAllHistory();
+        return ApiResponse.success(response, "전체 히스토리 조회 성공");
     }
 }
 
