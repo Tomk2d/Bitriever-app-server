@@ -61,7 +61,6 @@ public class LongShortController {
         )
         @RequestParam("period") String period
     ) {
-        log.info("롱숏 비율 조회 요청 - symbol: {}, period: {}", symbol, period);
 
         List<LongShortResponse> responses = longShortService.getLongShortRatio(symbol, period);
         return ApiResponse.success(responses);
