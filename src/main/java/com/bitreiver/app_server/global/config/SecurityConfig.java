@@ -41,6 +41,7 @@ public class SecurityConfig {
                     "/api/redis-test/**",  // Redis 테스트용 (추가)
                     "/api/longshort/**",  // 롱숏 비율 조회 API (인증 없이 공개)
                     "/api/articles/**",  // 기사 조회 API (인증 없이 공개)
+                    "/api/economic-indices/**",  // 경제 지표 조회 API (인증 없이 공개)
                     "/ws/**",       // WebSocket은 인증 없이 공개 (주가 데이터)
                     "/health", 
                     "/",
