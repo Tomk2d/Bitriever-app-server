@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface EconomicEventService {
     List<EconomicEventResponse> getEventsByYearMonth(String yearMonth);
+
+    List<EconomicEventResponse> getUpcomingEvents(int limit);
 }
