@@ -3,12 +3,12 @@ package com.bitreiver.app_server.domain.economicEvent.service;
 import com.bitreiver.app_server.domain.economicEvent.dto.EconomicEventResponse;
 import com.bitreiver.app_server.domain.economicEvent.entity.EconomicEvent;
 import com.bitreiver.app_server.domain.economicEvent.repository.EconomicEventRepository;
+import com.bitreiver.app_server.domain.economicEvent.dto.EconomicEventRedisDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.bitreiver.app_server.global.cache.RedisCacheService;
-import com.bitreiver.app_server.domain.economicEvent.dto.EconomicEventRedisDto;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.Collections;
 
@@ -27,6 +27,7 @@ public class EconomicEventServiceImpl implements EconomicEventService {
 
     private static final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
     private static final String REDIS_KEY_PREFIX = "economic-events:upcoming:";
+    private static final long TTL_SECONDS = 86400; // 1일
 
     @Override
     @Transactional(readOnly = true)
@@ -51,13 +52,31 @@ public class EconomicEventServiceImpl implements EconomicEventService {
             
             List<EconomicEventRedisDto> dtoList = redisCacheService.get(redisKey, typeRef)
                 .orElse(Collections.emptyList());
+
+            if (dtoList != null && !dtoList.isEmpty()) {
+                return dtoList.stream()
+                    .map(EconomicEventResponse::from)
+                    .collect(Collectors.toList());
+            }
             
-            if (dtoList.isEmpty()) {
-                log.warn("Redis 캐시에 데이터가 없습니다 - key: {}", redisKey);
+            log.info("Redis 캐시 미스 - DB에서 조회 후 캐싱 - key: {}, limit: {}", redisKey, limit);
+            
+            LocalDate today = LocalDate.now();
+            List<EconomicEvent> events = economicEventRepository.findUpcomingEvents(today, limit);
+            
+            if (events.isEmpty()) {
+                log.warn("DB에서도 데이터를 찾을 수 없습니다 - limit: {}", limit);
                 return Collections.emptyList();
             }
             
-            return dtoList.stream()
+            List<EconomicEventRedisDto> redisDtoList = events.stream()
+                .map(EconomicEventRedisDto::from)
+                .collect(Collectors.toList());
+            
+            redisCacheService.set(redisKey, redisDtoList, TTL_SECONDS);
+            log.info("DB 조회 후 Redis 캐시 저장 완료 - key: {}, 개수: {}", redisKey, redisDtoList.size());
+            
+            return events.stream()
                 .map(EconomicEventResponse::from)
                 .collect(Collectors.toList());
         } catch (Exception e) {
