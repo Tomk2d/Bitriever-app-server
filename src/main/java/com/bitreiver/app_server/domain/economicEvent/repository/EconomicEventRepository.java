@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 @Repository
-public interface EconomicEventRepository extends JpaRepository<EconomicEvent, Long> {
+public interface EconomicEventRepository extends JpaRepository<EconomicEvent, Long>, EconomicEventRepositoryEntityManager {
     @Query("SELECT DISTINCT e FROM EconomicEvent e " +
            "LEFT JOIN FETCH e.economicEventValue v " +
            "WHERE e.eventDate >= :startDate AND e.eventDate <= :endDate " +

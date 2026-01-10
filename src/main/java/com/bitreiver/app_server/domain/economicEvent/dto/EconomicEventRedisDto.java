@@ -1,5 +1,6 @@
 package com.bitreiver.app_server.domain.economicEvent.dto;
 
+import com.bitreiver.app_server.domain.economicEvent.entity.EconomicEvent;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -41,5 +42,37 @@ public class EconomicEventRedisDto {
         private BigDecimal historical;
         private LocalTime time;
         private String preAnnouncementWording;
+    }
+
+    public static EconomicEventRedisDto from(EconomicEvent event) {
+        EconomicEventValueRedisDto valueDto = null;
+        if (event.getEconomicEventValue() != null) {
+            var value = event.getEconomicEventValue();
+            valueDto = EconomicEventValueRedisDto.builder()
+                .id(value.getId())
+                .ric(value.getRic())
+                .unit(value.getUnit())
+                .unitPrefix(value.getUnitPrefix())
+                .actual(value.getActual())
+                .forecast(value.getForecast())
+                .actualForecastDiff(value.getActualForecastDiff())
+                .historical(value.getHistorical())
+                .time(value.getTime())
+                .preAnnouncementWording(value.getPreAnnouncementWording())
+                .build();
+        }
+        
+        return EconomicEventRedisDto.builder()
+            .id(event.getId())
+            .uniqueName(event.getUniqueName())
+            .eventDate(event.getEventDate())
+            .title(event.getTitle())
+            .subtitleText(event.getSubtitleText())
+            .countryType(event.getCountryType())
+            .excludeFromAll(event.getExcludeFromAll())
+            .economicEventValue(valueDto)
+            .createdAt(event.getCreatedAt())
+            .updatedAt(event.getUpdatedAt())
+            .build();
     }
 }
