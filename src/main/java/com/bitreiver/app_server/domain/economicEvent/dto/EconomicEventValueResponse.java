@@ -43,4 +43,23 @@ public class EconomicEventValueResponse {
             .preAnnouncementWording(value.getPreAnnouncementWording())
             .build();
     }
+    
+    public static EconomicEventValueResponse from(EconomicEventRedisDto.EconomicEventValueRedisDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        
+        return EconomicEventValueResponse.builder()
+            .id(dto.getId())
+            .ric(dto.getRic())
+            .unit(dto.getUnit())
+            .unitPrefix(dto.getUnitPrefix())
+            .actual(dto.getActual())
+            .forecast(dto.getForecast())
+            .actualForecastDiff(dto.getActualForecastDiff())
+            .historical(dto.getHistorical())
+            .time(dto.getTime())
+            .preAnnouncementWording(dto.getPreAnnouncementWording())
+            .build();
+    }
 }

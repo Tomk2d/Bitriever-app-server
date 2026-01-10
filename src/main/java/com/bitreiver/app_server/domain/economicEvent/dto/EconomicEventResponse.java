@@ -39,4 +39,19 @@ public class EconomicEventResponse {
             .updatedAt(event.getUpdatedAt())
             .build();
     }
+    
+    public static EconomicEventResponse from(EconomicEventRedisDto dto) {
+        return EconomicEventResponse.builder()
+            .id(dto.getId())
+            .uniqueName(dto.getUniqueName())
+            .eventDate(dto.getEventDate())
+            .title(dto.getTitle())
+            .subtitleText(dto.getSubtitleText())
+            .countryType(dto.getCountryType())
+            .excludeFromAll(dto.getExcludeFromAll())
+            .economicEventValue(EconomicEventValueResponse.from(dto.getEconomicEventValue()))
+            .createdAt(dto.getCreatedAt())
+            .updatedAt(dto.getUpdatedAt())
+            .build();
+    }
 }

@@ -49,4 +49,28 @@ public class EconomicEventController {
         List<EconomicEventResponse> events = economicEventService.getEventsByYearMonth(yearMonth);
         return ApiResponse.success(events);
     }
+    
+    @Operation(summary = "다가오는 경제 지표 이벤트 조회", 
+               description = "Redis에 캐싱된 다가오는 경제 지표 이벤트 목록을 조회합니다. (기본값: 5개)")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "조회 성공"
+        )
+    })
+    @GetMapping("/upcoming")
+    public ApiResponse<List<EconomicEventResponse>> getUpcomingEvents(
+        @Parameter(
+            name = "limit", 
+            description = "조회할 이벤트 개수 (기본값: 5)", 
+            required = false, 
+            in = ParameterIn.QUERY,
+            example = "5"
+        )
+        @RequestParam(value = "limit", defaultValue = "5") int limit
+    ) {
+        log.info("다가오는 경제 지표 이벤트 조회 요청: limit={}", limit);
+        List<EconomicEventResponse> events = economicEventService.getUpcomingEvents(limit);
+        return ApiResponse.success(events);
+    }
 }
