@@ -36,13 +36,14 @@ public class SecurityConfig {
                     "/api/auth/**", 
                     "/api/coins/**",
                     "/api/coin-prices/day/**",
-                    "/api/coin-prices/ticker/**",  // 코인 현재가 조회 API (인증 없이 공개)
-                    "/api/fear-greed/**",  // 공포/탐욕 지수 API (인증 없이 공개) - /today, /history, /{date} 포함
-                    "/api/redis-test/**",  // Redis 테스트용 (추가)
-                    "/api/longshort/**",  // 롱숏 비율 조회 API (인증 없이 공개)
-                    "/api/articles/**",  // 기사 조회 API (인증 없이 공개)
-                    "/api/economic-indices/**",  // 경제 지표 조회 API (인증 없이 공개)
-                    "/ws/**",       // WebSocket은 인증 없이 공개 (주가 데이터)
+                    "/api/coin-prices/ticker/**",  // 코인 현재가 조회 API 
+                    "/api/fear-greed/**",  // 공포/탐욕 지수 API  - /today, /history, /{date} 포함
+                    "/api/redis-test/**",  // Redis 테스트용 
+                    "/api/longshort/**",  // 롱숏 비율 조회 API 
+                    "/api/articles/**",  // 기사 조회 API 
+                    "/api/economic-indices/**",  // 경제 지표 조회 API 
+                    "/api/economic-events/**",  // 경제 지표 이벤트 조회 API 
+                    "/ws/**",       // WebSocket 인증 없이 공개 (주가 데이터)
                     "/health", 
                     "/",
                     "/docs",
