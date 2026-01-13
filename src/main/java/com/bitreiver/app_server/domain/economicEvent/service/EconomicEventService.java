@@ -8,4 +8,6 @@ public interface EconomicEventService {
     List<EconomicEventResponse> getEventsByYearMonth(String yearMonth);
 
     List<EconomicEventResponse> getUpcomingEvents(int limit);
+
+    int getTodayEventCount();
 }

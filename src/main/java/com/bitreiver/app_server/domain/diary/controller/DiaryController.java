@@ -4,12 +4,22 @@ import com.bitreiver.app_server.domain.diary.dto.DiaryRequest;
 import com.bitreiver.app_server.domain.diary.dto.DiaryResponse;
 import com.bitreiver.app_server.domain.diary.dto.TradingHistoryWithDiaryResponse;
 import com.bitreiver.app_server.domain.diary.service.DiaryService;
+import com.bitreiver.app_server.domain.diary.service.DiaryImageService;
 import com.bitreiver.app_server.global.common.response.ApiResponse;
+import com.bitreiver.app_server.global.common.exception.CustomException;
+import com.bitreiver.app_server.global.common.exception.ErrorCode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.MediaType;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +28,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @RestController
@@ -29,6 +38,8 @@ import java.util.UUID;
 public class DiaryController {
     
     private final DiaryService diaryService;
+    private final DiaryImageService diaryImageService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     
     @Operation(summary = "매매 일지 생성", description = "매매 내역에 대한 일지를 생성합니다.")
     @ApiResponses(value = {
@@ -154,6 +165,251 @@ public class DiaryController {
             userId, startDate, endDate
         );
         return ApiResponse.success(response);
+    }
+    
+    @Operation(summary = "매매 일지 이미지 업로드", description = "매매 일지에 이미지를 업로드합니다.")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "업로드 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 입력"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "일지를 찾을 수 없습니다.")
+    })
+    @SecurityRequirement(name = "JWT")
+    @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<DiaryResponse> uploadImage(
+        Authentication authentication,
+        @Parameter(description = "일지 ID", required = true)
+        @PathVariable("id") Integer id,
+        @Parameter(
+            description = "업로드할 이미지 파일 (JPEG, PNG, GIF, WEBP, 최대 5MB)",
+            required = true,
+            content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE)
+        )
+        @RequestParam("file") MultipartFile file
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        
+        // 일지 조회 및 권한 확인
+        DiaryResponse diary = diaryService.getDiaryById(userId, id);
+        
+        // 이미지 업로드
+        String imagePath = diaryImageService.uploadImage(id, file);
+        
+        // content JSONB에 image 블록 추가
+        String updatedContent = addImageBlockToContent(diary.getContent(), imagePath);
+        
+        // 일지 업데이트
+        DiaryRequest updateRequest = new DiaryRequest();
+        updateRequest.setTradingHistoryId(diary.getTradingHistoryId());
+        updateRequest.setContent(updatedContent);
+        updateRequest.setTags(diary.getTags());
+        updateRequest.setTradingMind(diary.getTradingMind());
+        
+        DiaryResponse updatedDiary = diaryService.updateDiary(userId, id, updateRequest);
+        
+        return ApiResponse.success(updatedDiary, "이미지가 업로드되었습니다.");
+    }
+    
+    @Operation(summary = "매매 일지 이미지 조회", description = "매매 일지의 이미지를 파일명으로 조회합니다.")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "일지 또는 이미지를 찾을 수 없습니다.")
+    })
+    @SecurityRequirement(name = "JWT")
+    @GetMapping("/{id}/images/{filename}")
+    public ResponseEntity<Resource> getImage(
+        Authentication authentication,
+        @Parameter(description = "일지 ID", required = true)
+        @PathVariable("id") Integer id,
+        @Parameter(description = "이미지 파일명 (예: 1_20250113150000.jpg)", required = true)
+        @PathVariable("filename") String filename
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        
+        // 일지 조회 및 권한 확인
+        DiaryResponse diary = diaryService.getDiaryById(userId, id);
+        
+        // content에서 해당 파일명이 존재하는지 확인 (보안 검증)
+        String imagePath = String.format("@diaryImage/%d/%s", id, filename);
+        if (!isImagePathInContent(diary.getContent(), imagePath)) {
+            throw new CustomException(ErrorCode.NOT_FOUND);
+        }
+        
+        // MinIO에서 이미지 다운로드
+        Resource resource = diaryImageService.downloadImage(id, imagePath);
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "image/jpeg")
+                .body(resource);
+    }
+    
+    @Operation(summary = "매매 일지 이미지 삭제", description = "매매 일지의 이미지를 삭제합니다.")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "삭제 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "일지 또는 이미지를 찾을 수 없습니다.")
+    })
+    @SecurityRequirement(name = "JWT")
+    @DeleteMapping("/{id}/images/{imageIndex}")
+    public ApiResponse<DiaryResponse> deleteImage(
+        Authentication authentication,
+        @PathVariable("id") Integer id,
+        @PathVariable("imageIndex") Integer imageIndex
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        
+        // 일지 조회 및 권한 확인
+        DiaryResponse diary = diaryService.getDiaryById(userId, id);
+        
+        // content에서 imageIndex에 해당하는 이미지 경로 추출
+        String imagePath = extractImagePathFromContent(diary.getContent(), imageIndex);
+        
+        if (imagePath == null) {
+            throw new CustomException(ErrorCode.NOT_FOUND);
+        }
+        
+        // MinIO에서 이미지 삭제
+        diaryImageService.deleteImage(id, imagePath);
+        
+        // content JSONB에서 image 블록 제거
+        String updatedContent = removeImageBlockFromContent(diary.getContent(), imageIndex);
+        
+        // 일지 업데이트
+        DiaryRequest updateRequest = new DiaryRequest();
+        updateRequest.setTradingHistoryId(diary.getTradingHistoryId());
+        updateRequest.setContent(updatedContent);
+        updateRequest.setTags(diary.getTags());
+        updateRequest.setTradingMind(diary.getTradingMind());
+        
+        DiaryResponse updatedDiary = diaryService.updateDiary(userId, id, updateRequest);
+        
+        return ApiResponse.success(updatedDiary, "이미지가 삭제되었습니다.");
+    }
+    
+    // Helper 메서드들
+    private String addImageBlockToContent(String content, String imagePath) {
+        try {
+            Map<String, Object> contentMap;
+            if (content == null || content.trim().isEmpty()) {
+                contentMap = new HashMap<>();
+                contentMap.put("blocks", new ArrayList<>());
+            } else {
+                contentMap = objectMapper.readValue(content, Map.class);
+            }
+            
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> blocks = (List<Map<String, Object>>) contentMap.get("blocks");
+            if (blocks == null) {
+                blocks = new ArrayList<>();
+                contentMap.put("blocks", blocks);
+            }
+            
+            Map<String, Object> imageBlock = new HashMap<>();
+            imageBlock.put("type", "image");
+            imageBlock.put("path", imagePath);
+            blocks.add(imageBlock);
+            
+            return objectMapper.writeValueAsString(contentMap);
+        } catch (Exception e) {
+            log.error("Content에 이미지 블록 추가 실패", e);
+            throw new CustomException(ErrorCode.INTERNAL_ERROR, "이미지 추가에 실패했습니다.");
+        }
+    }
+    
+    private boolean isImagePathInContent(String content, String imagePath) {
+        try {
+            if (content == null || content.trim().isEmpty() || imagePath == null) {
+                return false;
+            }
+            
+            Map<String, Object> contentMap = objectMapper.readValue(content, Map.class);
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> blocks = (List<Map<String, Object>>) contentMap.get("blocks");
+            
+            if (blocks == null) {
+                return false;
+            }
+            
+            for (Map<String, Object> block : blocks) {
+                if ("image".equals(block.get("type"))) {
+                    String path = (String) block.get("path");
+                    if (imagePath.equals(path)) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        } catch (Exception e) {
+            log.error("Content에서 이미지 경로 확인 실패", e);
+            return false;
+        }
+    }
+    
+    private String extractImagePathFromContent(String content, int imageIndex) {
+        try {
+            if (content == null || content.trim().isEmpty()) {
+                return null;
+            }
+            
+            Map<String, Object> contentMap = objectMapper.readValue(content, Map.class);
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> blocks = (List<Map<String, Object>>) contentMap.get("blocks");
+            
+            if (blocks == null) {
+                return null;
+            }
+            
+            int imageCount = 0;
+            for (Map<String, Object> block : blocks) {
+                if ("image".equals(block.get("type"))) {
+                    if (imageCount == imageIndex) {
+                        return (String) block.get("path");
+                    }
+                    imageCount++;
+                }
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.error("Content에서 이미지 경로 추출 실패", e);
+            return null;
+        }
+    }
+    
+    private String removeImageBlockFromContent(String content, int imageIndex) {
+        try {
+            if (content == null || content.trim().isEmpty()) {
+                return content;
+            }
+            
+            Map<String, Object> contentMap = objectMapper.readValue(content, Map.class);
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> blocks = (List<Map<String, Object>>) contentMap.get("blocks");
+            
+            if (blocks == null) {
+                return content;
+            }
+            
+            int imageCount = 0;
+            Iterator<Map<String, Object>> iterator = blocks.iterator();
+            while (iterator.hasNext()) {
+                Map<String, Object> block = iterator.next();
+                if ("image".equals(block.get("type"))) {
+                    if (imageCount == imageIndex) {
+                        iterator.remove();
+                        break;
+                    }
+                    imageCount++;
+                }
+            }
+            
+            return objectMapper.writeValueAsString(contentMap);
+        } catch (Exception e) {
+            log.error("Content에서 이미지 블록 제거 실패", e);
+            throw new CustomException(ErrorCode.INTERNAL_ERROR, "이미지 삭제에 실패했습니다.");
+        }
     }
 }
 

@@ -53,6 +53,9 @@ dependencies {
 	// Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	
+	// MinIO (S3 호환)
+	implementation 'io.minio:minio:8.5.7'
+	
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'

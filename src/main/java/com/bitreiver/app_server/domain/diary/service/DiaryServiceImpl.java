@@ -9,20 +9,28 @@ import com.bitreiver.app_server.domain.trading.entity.TradingHistory;
 import com.bitreiver.app_server.domain.trading.repository.TradingHistoryRepository;
 import com.bitreiver.app_server.global.common.exception.CustomException;
 import com.bitreiver.app_server.global.common.exception.ErrorCode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DiaryServiceImpl implements DiaryService {
     
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    
     private final DiaryRepository diaryRepository;
     private final TradingHistoryRepository tradingHistoryRepository;
+    private final DiaryImageService diaryImageService;
     
     @Override
     @Transactional
@@ -116,7 +124,44 @@ public class DiaryServiceImpl implements DiaryService {
         Diary diary = diaryRepository.findByIdAndUserId(id, userId)
             .orElseThrow(() -> new CustomException(ErrorCode.DIARY_NOT_FOUND));
         
+        // content에서 모든 이미지 경로 추출
+        List<String> imagePaths = extractAllImagePaths(diary.getContent());
+        
+        // MinIO에서 이미지 파일 삭제
+        if (!imagePaths.isEmpty()) {
+            diaryImageService.deleteAllImages(id, imagePaths);
+        }
+        
         diaryRepository.delete(diary);
+    }
+    
+    private List<String> extractAllImagePaths(String content) {
+        List<String> imagePaths = new ArrayList<>();
+        
+        if (content == null || content.trim().isEmpty()) {
+            return imagePaths;
+        }
+        
+        try {
+            Map<String, Object> contentMap = objectMapper.readValue(content, Map.class);
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> blocks = (List<Map<String, Object>>) contentMap.get("blocks");
+            
+            if (blocks != null) {
+                for (Map<String, Object> block : blocks) {
+                    if ("image".equals(block.get("type"))) {
+                        String path = (String) block.get("path");
+                        if (path != null) {
+                            imagePaths.add(path);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Content에서 이미지 경로 추출 실패", e);
+        }
+        
+        return imagePaths;
     }
     
     @Override
