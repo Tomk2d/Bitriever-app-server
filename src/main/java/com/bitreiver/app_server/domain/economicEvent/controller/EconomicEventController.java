@@ -69,8 +69,22 @@ public class EconomicEventController {
         )
         @RequestParam(value = "limit", defaultValue = "5") int limit
     ) {
-        log.info("다가오는 경제 지표 이벤트 조회 요청: limit={}", limit);
         List<EconomicEventResponse> events = economicEventService.getUpcomingEvents(limit);
         return ApiResponse.success(events);
+    }
+
+    @Operation(summary = "오늘 날짜 경제 지표 이벤트 개수 조회", 
+            description = "오늘 날짜에 예정된 경제 지표 이벤트의 개수를 조회합니다.")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "조회 성공"
+        )
+    })
+    @GetMapping("/today/count")
+    public ApiResponse<Integer> getTodayEventCount() {
+        log.info("오늘 날짜 경제 지표 이벤트 개수 조회 요청");
+        int count = economicEventService.getTodayEventCount();
+        return ApiResponse.success(count);
     }
 }

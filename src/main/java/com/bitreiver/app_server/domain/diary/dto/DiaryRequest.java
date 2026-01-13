@@ -4,10 +4,12 @@ import com.bitreiver.app_server.domain.diary.enums.TradingMind;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
 @Getter
+@Setter
 @Schema(description = "매매 일지 요청")
 public class DiaryRequest {
     
