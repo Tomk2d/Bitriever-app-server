@@ -192,22 +192,37 @@ public class DiaryController {
         // 일지 조회 및 권한 확인
         DiaryResponse diary = diaryService.getDiaryById(userId, id);
         
-        // 이미지 업로드
-        String imagePath = diaryImageService.uploadImage(id, file);
-        
-        // content JSONB에 image 블록 추가
-        String updatedContent = addImageBlockToContent(diary.getContent(), imagePath);
-        
-        // 일지 업데이트
-        DiaryRequest updateRequest = new DiaryRequest();
-        updateRequest.setTradingHistoryId(diary.getTradingHistoryId());
-        updateRequest.setContent(updatedContent);
-        updateRequest.setTags(diary.getTags());
-        updateRequest.setTradingMind(diary.getTradingMind());
-        
-        DiaryResponse updatedDiary = diaryService.updateDiary(userId, id, updateRequest);
-        
-        return ApiResponse.success(updatedDiary, "이미지가 업로드되었습니다.");
+        String imagePath = null;
+        try {
+            // 1. MinIO에 이미지 업로드
+            imagePath = diaryImageService.uploadImage(id, file);
+            
+            // 2. content JSONB에 image 블록 추가
+            String updatedContent = addImageBlockToContent(diary.getContent(), imagePath);
+            
+            // 3. 일지 업데이트 (DB 트랜잭션)
+            DiaryRequest updateRequest = new DiaryRequest();
+            updateRequest.setTradingHistoryId(diary.getTradingHistoryId());
+            updateRequest.setContent(updatedContent);
+            updateRequest.setTags(diary.getTags());
+            updateRequest.setTradingMind(diary.getTradingMind());
+            
+            DiaryResponse updatedDiary = diaryService.updateDiary(userId, id, updateRequest);
+            
+            return ApiResponse.success(updatedDiary, "이미지가 업로드되었습니다.");
+            
+        } catch (Exception e) {
+            // DB 업데이트 실패 시 MinIO에서 이미지 삭제 (보상 트랜잭션)
+            if (imagePath != null) {
+                try {
+                    diaryImageService.deleteImage(id, imagePath);
+                    log.warn("DB 업데이트 실패로 MinIO에서 이미지 삭제 (보상 트랜잭션): imagePath={}", imagePath);
+                } catch (Exception cleanupException) {
+                    log.error("보상 트랜잭션 실패: MinIO 이미지 삭제 실패 - imagePath={}", imagePath, cleanupException);
+                }
+            }
+            throw e; // 원래 예외를 다시 던짐
+        }
     }
     
     @Operation(summary = "매매 일지 이미지 조회", description = "매매 일지의 이미지를 파일명으로 조회합니다.")
@@ -244,47 +259,65 @@ public class DiaryController {
                 .body(resource);
     }
     
-    @Operation(summary = "매매 일지 이미지 삭제", description = "매매 일지의 이미지를 삭제합니다.")
+    @Operation(summary = "매매 일지 이미지 삭제", description = "매매 일지의 이미지를 파일명으로 삭제합니다.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "삭제 성공"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "일지 또는 이미지를 찾을 수 없습니다.")
     })
     @SecurityRequirement(name = "JWT")
-    @DeleteMapping("/{id}/images/{imageIndex}")
+    @DeleteMapping("/{id}/images/{filename}")
     public ApiResponse<DiaryResponse> deleteImage(
         Authentication authentication,
+        @Parameter(description = "일지 ID", required = true)
         @PathVariable("id") Integer id,
-        @PathVariable("imageIndex") Integer imageIndex
+        @Parameter(description = "이미지 파일명 (예: 1_20250113150000.jpg)", required = true)
+        @PathVariable("filename") String filename
     ) {
         UUID userId = UUID.fromString(authentication.getName());
         
         // 일지 조회 및 권한 확인
         DiaryResponse diary = diaryService.getDiaryById(userId, id);
         
-        // content에서 imageIndex에 해당하는 이미지 경로 추출
-        String imagePath = extractImagePathFromContent(diary.getContent(), imageIndex);
+        // content에서 filename에 해당하는 이미지 경로 추출
+        String imagePath = String.format("@diaryImage/%d/%s", id, filename);
         
-        if (imagePath == null) {
+        // content에 해당 이미지가 존재하는지 확인
+        if (!isImagePathInContent(diary.getContent(), imagePath)) {
             throw new CustomException(ErrorCode.NOT_FOUND);
         }
         
-        // MinIO에서 이미지 삭제
-        diaryImageService.deleteImage(id, imagePath);
-        
-        // content JSONB에서 image 블록 제거
-        String updatedContent = removeImageBlockFromContent(diary.getContent(), imageIndex);
-        
-        // 일지 업데이트
-        DiaryRequest updateRequest = new DiaryRequest();
-        updateRequest.setTradingHistoryId(diary.getTradingHistoryId());
-        updateRequest.setContent(updatedContent);
-        updateRequest.setTags(diary.getTags());
-        updateRequest.setTradingMind(diary.getTradingMind());
-        
-        DiaryResponse updatedDiary = diaryService.updateDiary(userId, id, updateRequest);
-        
-        return ApiResponse.success(updatedDiary, "이미지가 삭제되었습니다.");
+        try {
+            // 1. DB에서 content 업데이트 (먼저 수행)
+            String updatedContent = removeImageBlockFromContentByPath(diary.getContent(), imagePath);
+            
+            DiaryRequest updateRequest = new DiaryRequest();
+            updateRequest.setTradingHistoryId(diary.getTradingHistoryId());
+            updateRequest.setContent(updatedContent);
+            updateRequest.setTags(diary.getTags());
+            updateRequest.setTradingMind(diary.getTradingMind());
+            
+            DiaryResponse updatedDiary = diaryService.updateDiary(userId, id, updateRequest);
+            
+            // 2. MinIO에서 이미지 삭제
+            try {
+                diaryImageService.deleteImage(id, imagePath);
+            } catch (Exception e) {
+                // MinIO 삭제 실패 시 DB 롤백은 @Transactional이 자동으로 처리
+                log.error("MinIO 삭제 실패, DB 롤백됨: imagePath={}", imagePath, e);
+                throw new CustomException(ErrorCode.INTERNAL_ERROR, "이미지 삭제에 실패했습니다: " + e.getMessage());
+            }
+            
+            return ApiResponse.success(updatedDiary, "이미지가 삭제되었습니다.");
+            
+        } catch (CustomException e) {
+            // CustomException은 그대로 던짐
+            throw e;
+        } catch (Exception e) {
+            // DB 업데이트 실패 시는 MinIO에 아무것도 하지 않음 (이미 존재)
+            log.error("DB 업데이트 실패: imagePath={}", imagePath, e);
+            throw new CustomException(ErrorCode.INTERNAL_ERROR, "이미지 삭제에 실패했습니다: " + e.getMessage());
+        }
     }
     
     // Helper 메서드들
@@ -402,6 +435,39 @@ public class DiaryController {
                         break;
                     }
                     imageCount++;
+                }
+            }
+            
+            return objectMapper.writeValueAsString(contentMap);
+        } catch (Exception e) {
+            log.error("Content에서 이미지 블록 제거 실패", e);
+            throw new CustomException(ErrorCode.INTERNAL_ERROR, "이미지 삭제에 실패했습니다.");
+        }
+    }
+    
+    private String removeImageBlockFromContentByPath(String content, String imagePath) {
+        try {
+            if (content == null || content.trim().isEmpty()) {
+                return content;
+            }
+            
+            Map<String, Object> contentMap = objectMapper.readValue(content, Map.class);
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> blocks = (List<Map<String, Object>>) contentMap.get("blocks");
+            
+            if (blocks == null) {
+                return content;
+            }
+            
+            Iterator<Map<String, Object>> iterator = blocks.iterator();
+            while (iterator.hasNext()) {
+                Map<String, Object> block = iterator.next();
+                if ("image".equals(block.get("type"))) {
+                    String path = (String) block.get("path");
+                    if (imagePath.equals(path)) {
+                        iterator.remove();
+                        break;
+                    }
                 }
             }
             

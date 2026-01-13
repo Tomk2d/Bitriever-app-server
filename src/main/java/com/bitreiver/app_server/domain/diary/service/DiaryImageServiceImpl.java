@@ -112,7 +112,8 @@ public class DiaryImageServiceImpl implements DiaryImageService {
             
         } catch (Exception e) {
             log.error("이미지 삭제 실패: diaryId={}, objectKey={}", diaryId, objectKey, e);
-            // 삭제 실패해도 예외를 던지지 않음 (이미 DB에서 제거된 경우)
+            // 예외를 던져서 호출자가 실패를 감지할 수 있도록
+            throw new CustomException(ErrorCode.INTERNAL_ERROR, "이미지 삭제에 실패했습니다: " + e.getMessage());
         }
     }
     
