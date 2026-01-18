@@ -43,6 +43,8 @@ public class SecurityConfig {
                     "/api/articles/**",  // 기사 조회 API 
                     "/api/economic-indices/**",  // 경제 지표 조회 API 
                     "/api/economic-events/**",  // 경제 지표 이벤트 조회 API 
+                    "/api/sse/**",  // SSE 엔드포인트 (인증 필요)
+                    "/api/notifications/**",  // 알림 API (인증 필요)
                     "/ws/**",       // WebSocket 인증 없이 공개 (주가 데이터)
                     "/health", 
                     "/",
