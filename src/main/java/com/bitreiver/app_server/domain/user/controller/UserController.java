@@ -54,7 +54,7 @@ public class UserController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "확인 성공")
     })
     @GetMapping("/check-nickname")
-    public ApiResponse<Boolean> checkNickname(@RequestParam String nickname) {
+    public ApiResponse<Boolean> checkNickname(@RequestParam(value = "nickname") String nickname) {
         boolean isAvailable = userService.checkNicknameAvailable(nickname);
         return ApiResponse.success(isAvailable);
     }
