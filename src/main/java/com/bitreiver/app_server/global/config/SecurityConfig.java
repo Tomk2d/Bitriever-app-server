@@ -55,6 +55,12 @@ public class SecurityConfig {
                     "/swagger-resources/**",
                     "/webjars/**"
                 ).permitAll()
+                // 커뮤니티 API - GET 요청만 permitAll, 나머지는 authenticated
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/communities/**").permitAll()
+                .requestMatchers("/api/communities/**").authenticated()
+                // 커뮤니티 댓글 API - GET 요청만 permitAll, 나머지는 authenticated
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/communities/*/comments/**").permitAll()
+                .requestMatchers("/api/communities/*/comments/**").authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
