@@ -238,6 +238,30 @@ public class CommunityServiceImpl implements CommunityService {
     
     @Override
     @Transactional
+    public CommunityResponse updateCommunityWithImageManagement(UUID userId, Integer id, CommunityRequest request) {
+        CommunityResponse existingCommunity = getCommunityById(id, userId);
+        
+        List<String> existingImagePaths = extractAllImagePaths(existingCommunity.getContent());
+        List<String> newImagePaths = extractAllImagePaths(request.getContent());
+        
+        List<String> imagesToDelete = existingImagePaths.stream()
+                .filter(path -> !newImagePaths.contains(path))
+                .collect(Collectors.toList());
+        
+        if (!imagesToDelete.isEmpty()) {
+            try {
+                communityImageService.deleteAllImages(id, imagesToDelete);
+                log.info("삭제된 이미지 제거 완료: communityId={}, count={}", id, imagesToDelete.size());
+            } catch (Exception e) {
+                log.error("MinIO 이미지 삭제 실패: communityId={}, images={}", id, imagesToDelete, e);
+            }
+        }
+        
+        return updateCommunity(userId, id, request);
+    }
+    
+    @Override
+    @Transactional
     public void deleteCommunity(UUID userId, Integer id) {
         Community community = communityRepository.findByIdAndUserId(id, userId)
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "게시글을 찾을 수 없습니다."));
@@ -378,10 +402,11 @@ public class CommunityServiceImpl implements CommunityService {
                     if ("text".equals(block.get("type"))) {
                         String text = (String) block.get("content");
                         if (text != null && !text.trim().isEmpty()) {
-                            String trimmed = text.trim();
-                            // 100자로 제한
-                            if (trimmed.length() > 100) {
-                                return trimmed.substring(0, 100) + "...";
+                            // 줄바꿈을 공백으로 변환
+                            String trimmed = text.trim().replaceAll("\\s+", " ");
+                            // 60자로 제한
+                            if (trimmed.length() > 60) {
+                                return trimmed.substring(0, 60) + "...";
                             }
                             return trimmed;
                         }

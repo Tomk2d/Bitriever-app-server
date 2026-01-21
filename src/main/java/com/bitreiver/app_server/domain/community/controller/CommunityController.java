@@ -145,6 +145,26 @@ public class CommunityController {
         return ApiResponse.success(response, "게시글이 수정되었습니다.");
     }
     
+    @Operation(summary = "게시글 수정 (이미지 관리 포함)", description = "게시글을 수정하고 삭제된 이미지를 MinIO에서 제거합니다. 이미지는 클라이언트에서 이미 업로드되어 있어야 합니다.")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "수정 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 입력"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없습니다.")
+    })
+    @SecurityRequirement(name = "JWT")
+    @PutMapping("/{id}/update-content")
+    public ApiResponse<CommunityResponse> updateCommunityWithImageManagement(
+        Authentication authentication,
+        @Parameter(description = "게시글 ID", required = true)
+        @PathVariable("id") Integer id,
+        @Valid @RequestBody CommunityRequest request
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        CommunityResponse response = communityService.updateCommunityWithImageManagement(userId, id, request);
+        return ApiResponse.success(response, "게시글이 수정되었습니다.");
+    }
+    
     @Operation(summary = "게시글 삭제", description = "게시글을 삭제합니다.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "삭제 성공"),

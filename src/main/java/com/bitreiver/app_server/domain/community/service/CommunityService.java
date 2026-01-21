@@ -16,6 +16,7 @@ public interface CommunityService {
     PageResponse<CommunityListResponse> getCommunitiesByCategory(Category category, int page, int size);
     PageResponse<CommunityListResponse> searchCommunities(CommunitySearchRequest request, UUID userId);
     CommunityResponse updateCommunity(UUID userId, Integer id, CommunityRequest request);
+    CommunityResponse updateCommunityWithImageManagement(UUID userId, Integer id, CommunityRequest request);
     void deleteCommunity(UUID userId, Integer id);
     PageResponse<CommunityListResponse> getMyCommunities(UUID userId, int page, int size);
     PageResponse<CommunityListResponse> getAllCommunities(int page, int size);
