@@ -126,6 +126,26 @@ public class DiaryController {
         return ApiResponse.success(response, "매매 일지가 수정되었습니다.");
     }
     
+    @Operation(summary = "매매 일지 수정 (이미지 관리 포함)", description = "매매 일지를 수정하고 삭제된 이미지를 MinIO에서 제거합니다. 이미지는 클라이언트에서 이미 업로드되어 있어야 합니다.")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "수정 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 입력"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "일지를 찾을 수 없습니다.")
+    })
+    @SecurityRequirement(name = "JWT")
+    @PutMapping("/{id}/update-content")
+    public ApiResponse<DiaryResponse> updateDiaryWithImageManagement(
+        Authentication authentication,
+        @Parameter(description = "일지 ID", required = true)
+        @PathVariable("id") Integer id,
+        @Valid @RequestBody DiaryRequest request
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        DiaryResponse response = diaryService.updateDiaryWithImageManagement(userId, id, request);
+        return ApiResponse.success(response, "매매 일지가 수정되었습니다.");
+    }
+    
     @Operation(summary = "매매 일지 삭제", description = "등록된 매매 일지를 삭제합니다.")
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "삭제 성공"),
@@ -191,6 +211,12 @@ public class DiaryController {
         
         // 일지 조회 및 권한 확인
         DiaryResponse diary = diaryService.getDiaryById(userId, id);
+        
+        // 현재 이미지 개수 확인
+        List<String> currentImagePaths = diaryService.extractAllImagePaths(diary.getContent());
+        if (currentImagePaths.size() >= 5) {
+            throw new CustomException(ErrorCode.BAD_REQUEST, "이미지는 최대 5개까지 추가할 수 있습니다.");
+        }
         
         String imagePath = null;
         try {

@@ -39,6 +39,14 @@ public class CommunityServiceImpl implements CommunityService {
     @Override
     @Transactional
     public CommunityResponse createCommunity(UUID userId, CommunityRequest request) {
+        // 제목 바이트 수 검증 (100byte = 한글 33자 제한)
+        if (request.getTitle() != null) {
+            int titleBytes = request.getTitle().getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            if (titleBytes > 100) {
+                throw new CustomException(ErrorCode.BAD_REQUEST, "제목은 100byte 이하로 작성해주세요. (한글 33자)");
+            }
+        }
+        
         Category category = request.getCategoryAsEnum();
         if (category == null) {
             throw new CustomException(ErrorCode.BAD_REQUEST, "유효하지 않은 카테고리입니다.");
@@ -204,6 +212,13 @@ public class CommunityServiceImpl implements CommunityService {
     @Override
     @Transactional
     public CommunityResponse updateCommunity(UUID userId, Integer id, CommunityRequest request) {
+        // 제목 바이트 수 검증 (100byte = 한글 33자 제한)
+        if (request.getTitle() != null) {
+            int titleBytes = request.getTitle().getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            if (titleBytes > 100) {
+                throw new CustomException(ErrorCode.BAD_REQUEST, "제목은 100byte 이하로 작성해주세요. (한글 33자)");
+            }
+        }
         Community community = communityRepository.findByIdAndUserId(id, userId)
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND, "게시글을 찾을 수 없습니다."));
         
@@ -239,7 +254,23 @@ public class CommunityServiceImpl implements CommunityService {
     @Override
     @Transactional
     public CommunityResponse updateCommunityWithImageManagement(UUID userId, Integer id, CommunityRequest request) {
+        // 제목 바이트 수 검증 (100byte = 한글 33자 제한)
+        if (request.getTitle() != null) {
+            int titleBytes = request.getTitle().getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            if (titleBytes > 100) {
+                throw new CustomException(ErrorCode.BAD_REQUEST, "제목은 100byte 이하로 작성해주세요. (한글 33자)");
+            }
+        }
+        
         CommunityResponse existingCommunity = getCommunityById(id, userId);
+        
+        // 이미지 개수 검증
+        if (request.getContent() != null) {
+            List<String> newImagePaths = extractAllImagePaths(request.getContent());
+            if (newImagePaths.size() > 5) {
+                throw new CustomException(ErrorCode.BAD_REQUEST, "이미지는 최대 5개까지 추가할 수 있습니다.");
+            }
+        }
         
         List<String> existingImagePaths = extractAllImagePaths(existingCommunity.getContent());
         List<String> newImagePaths = extractAllImagePaths(request.getContent());
@@ -420,7 +451,8 @@ public class CommunityServiceImpl implements CommunityService {
         return null;
     }
     
-    private List<String> extractAllImagePaths(String content) {
+    @Override
+    public List<String> extractAllImagePaths(String content) {
         List<String> imagePaths = new java.util.ArrayList<>();
         
         if (content == null || content.trim().isEmpty()) {

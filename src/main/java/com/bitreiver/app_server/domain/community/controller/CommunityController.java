@@ -56,6 +56,15 @@ public class CommunityController {
         @Valid @RequestBody CommunityRequest request
     ) {
         UUID userId = UUID.fromString(authentication.getName());
+        
+        // 이미지 개수 검증
+        if (request.getContent() != null) {
+            List<String> imagePaths = communityService.extractAllImagePaths(request.getContent());
+            if (imagePaths.size() > 5) {
+                throw new CustomException(ErrorCode.BAD_REQUEST, "이미지는 최대 5개까지 추가할 수 있습니다.");
+            }
+        }
+        
         CommunityResponse response = communityService.createCommunity(userId, request);
         return ApiResponse.success(response, "게시글이 작성되었습니다.");
     }
@@ -226,6 +235,12 @@ public class CommunityController {
         
         // 게시글 조회 및 권한 확인
         CommunityResponse community = communityService.getCommunityById(id, userId);
+        
+        // 현재 이미지 개수 확인
+        List<String> currentImagePaths = communityService.extractAllImagePaths(community.getContent());
+        if (currentImagePaths.size() >= 5) {
+            throw new CustomException(ErrorCode.BAD_REQUEST, "이미지는 최대 5개까지 추가할 수 있습니다.");
+        }
         
         String imagePath = null;
         try {

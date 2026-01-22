@@ -4,6 +4,7 @@ import com.bitreiver.app_server.domain.community.enums.Category;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,7 +26,8 @@ public class CommunityRequest {
     @Schema(description = "게시글 내용 (JSONB 형식)", example = "{\"blocks\":[{\"type\":\"text\",\"content\":\"오늘 비트코인을 매수했습니다...\"}]}")
     private String content;
     
-    @Schema(description = "해시태그 배열", example = "[\"비트코인\", \"투자\"]")
+    @Schema(description = "해시태그 배열 (최대 5개)", example = "[\"비트코인\", \"투자\"]")
+    @Size(max = 5, message = "해시태그는 최대 5개까지 추가할 수 있습니다.")
     private List<String> hashtags;
     
     @Schema(hidden = true)
