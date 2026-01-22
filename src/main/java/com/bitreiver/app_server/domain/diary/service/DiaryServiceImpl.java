@@ -120,6 +120,38 @@ public class DiaryServiceImpl implements DiaryService {
     
     @Override
     @Transactional
+    public DiaryResponse updateDiaryWithImageManagement(UUID userId, Integer id, DiaryRequest request) {
+        DiaryResponse existingDiary = getDiaryById(userId, id);
+        
+        // 이미지 개수 검증
+        if (request.getContent() != null) {
+            List<String> newImagePaths = extractAllImagePaths(request.getContent());
+            if (newImagePaths.size() > 5) {
+                throw new CustomException(ErrorCode.BAD_REQUEST, "이미지는 최대 5개까지 추가할 수 있습니다.");
+            }
+        }
+        
+        List<String> existingImagePaths = extractAllImagePaths(existingDiary.getContent());
+        List<String> newImagePaths = extractAllImagePaths(request.getContent());
+        
+        List<String> imagesToDelete = existingImagePaths.stream()
+                .filter(path -> !newImagePaths.contains(path))
+                .collect(java.util.stream.Collectors.toList());
+        
+        if (!imagesToDelete.isEmpty()) {
+            try {
+                diaryImageService.deleteAllImages(id, imagesToDelete);
+                log.info("삭제된 이미지 제거 완료: diaryId={}, count={}", id, imagesToDelete.size());
+            } catch (Exception e) {
+                log.error("MinIO 이미지 삭제 실패: diaryId={}, images={}", id, imagesToDelete, e);
+            }
+        }
+        
+        return updateDiary(userId, id, request);
+    }
+    
+    @Override
+    @Transactional
     public void deleteDiary(UUID userId, Integer id) {
         Diary diary = diaryRepository.findByIdAndUserId(id, userId)
             .orElseThrow(() -> new CustomException(ErrorCode.DIARY_NOT_FOUND));
@@ -135,7 +167,8 @@ public class DiaryServiceImpl implements DiaryService {
         diaryRepository.delete(diary);
     }
     
-    private List<String> extractAllImagePaths(String content) {
+    @Override
+    public List<String> extractAllImagePaths(String content) {
         List<String> imagePaths = new ArrayList<>();
         
         if (content == null || content.trim().isEmpty()) {

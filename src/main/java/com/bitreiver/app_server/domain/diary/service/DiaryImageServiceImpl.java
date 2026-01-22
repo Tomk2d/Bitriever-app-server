@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -41,12 +42,13 @@ public class DiaryImageServiceImpl implements DiaryImageService {
         // 파일 유효성 검증
         validateFile(file);
         
-        // 파일명 생성: {diaryId}_{timestamp}.{확장자}
+        // 파일명 생성: {diaryId}_{timestamp}_{random}.{확장자}
         String originalFilename = file.getOriginalFilename();
         String extension = getFileExtension(originalFilename);
         String timestamp = LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        String filename = String.format("%d_%s.%s", diaryId, timestamp, extension);
+                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
+        String randomSuffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        String filename = String.format("%d_%s_%s.%s", diaryId, timestamp, randomSuffix, extension);
         
         // 객체 키: diary-images/{diaryId}/{filename}
         String objectKey = String.format("diary-images/%d/%s", diaryId, filename);

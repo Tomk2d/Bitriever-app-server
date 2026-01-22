@@ -14,11 +14,13 @@ public interface DiaryService {
     DiaryResponse getDiaryByTradingHistoryId(UUID userId, Integer tradingHistoryId);
     List<DiaryResponse> getUserDiaries(UUID userId);
     DiaryResponse updateDiary(UUID userId, Integer id, DiaryRequest request);
+    DiaryResponse updateDiaryWithImageManagement(UUID userId, Integer id, DiaryRequest request);
     void deleteDiary(UUID userId, Integer id);
     List<TradingHistoryWithDiaryResponse> getTradingHistoriesWithDiariesByDateRange(
         UUID userId,
         LocalDateTime startDate,
         LocalDateTime endDate
     );
+    List<String> extractAllImagePaths(String content);
 }
 

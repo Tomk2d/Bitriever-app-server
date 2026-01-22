@@ -7,6 +7,7 @@ import com.bitreiver.app_server.domain.community.dto.CommunitySearchRequest;
 import com.bitreiver.app_server.domain.community.enums.Category;
 import com.bitreiver.app_server.global.common.dto.PageResponse;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface CommunityService {
@@ -20,4 +21,5 @@ public interface CommunityService {
     void deleteCommunity(UUID userId, Integer id);
     PageResponse<CommunityListResponse> getMyCommunities(UUID userId, int page, int size);
     PageResponse<CommunityListResponse> getAllCommunities(int page, int size);
+    List<String> extractAllImagePaths(String content);
 }
