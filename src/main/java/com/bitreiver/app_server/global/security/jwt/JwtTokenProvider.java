@@ -85,5 +85,42 @@ public class JwtTokenProvider {
             return false;
         }
     }
+    
+    /**
+     * 토큰의 만료 시간을 반환
+     * @param token JWT 토큰
+     * @return 만료 시간 (Date), 토큰이 유효하지 않으면 null
+     */
+    public Date getTokenExpiration(String token) {
+        try {
+            SecretKey key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+            return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getExpiration();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * 토큰의 남은 유효기간을 밀리초로 반환
+     * @param token JWT 토큰
+     * @return 남은 유효기간 (밀리초), 토큰이 만료되었거나 유효하지 않으면 0
+     */
+    public long getRemainingTime(String token) {
+        try {
+            Date expiration = getTokenExpiration(token);
+            if (expiration == null) {
+                return 0;
+            }
+            long remaining = expiration.getTime() - System.currentTimeMillis();
+            return Math.max(0, remaining);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
 }
 
