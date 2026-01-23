@@ -29,7 +29,7 @@ public class User {
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
     
-    @Column(name = "nickname", nullable = false, unique = true, length = 20)
+    @Column(name = "nickname", nullable = true, unique = true, length = 20)
     private String nickname;
     
     @Column(name = "signup_type", nullable = false)
@@ -71,6 +71,10 @@ public class User {
     
     public void updateTradingHistorySyncTime() {
         this.lastTradingHistoryUpdateAt = LocalDateTime.now();
+    }
+    
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 }
 

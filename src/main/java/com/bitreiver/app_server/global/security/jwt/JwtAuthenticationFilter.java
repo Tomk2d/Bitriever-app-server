@@ -25,6 +25,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenBlacklistService tokenBlacklistService;
     private final ObjectMapper objectMapper;
     
     @Override
@@ -35,6 +36,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         if (token != null) {
             try {
+                // 블랙리스트 확인
+                if (tokenBlacklistService.isAccessTokenBlacklisted(token)) {
+                    sendErrorResponse(response, ErrorCode.INVALID_TOKEN);
+                    return;
+                }
+                
                 // 토큰 만료 여부 확인
                 if (jwtTokenProvider.isTokenExpired(token)) {
                     sendErrorResponse(response, ErrorCode.EXPIRED_TOKEN);
