@@ -7,6 +7,8 @@ import com.bitreiver.app_server.domain.user.dto.UserSignUpRequest;
 import com.bitreiver.app_server.domain.user.entity.User;
 import com.bitreiver.app_server.domain.user.enums.SnsProvider;
 import com.bitreiver.app_server.domain.user.repository.UserRepository;
+import com.bitreiver.app_server.domain.notification.service.NotificationService;
+import com.bitreiver.app_server.domain.notification.enums.NotificationType;
 import com.bitreiver.app_server.global.common.exception.CustomException;
 import com.bitreiver.app_server.global.common.exception.ErrorCode;
 import com.bitreiver.app_server.global.security.jwt.JwtTokenProvider;
@@ -28,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenBlacklistService tokenBlacklistService;
+    private final NotificationService notificationService;
     
     @Override
     @Transactional
@@ -54,6 +57,14 @@ public class UserServiceImpl implements UserService {
             .build();
         
         userRepository.save(user);
+
+        notificationService.createNotification(
+            user.getId(),
+            NotificationType.SYSTEM,
+            "회원가입을 환영합니다.",
+            user.getNickname() + "님, Bitriever 의 새로운 회원이 되신것을 환영합니다. 다양한 거래소를 연동하고 매매일지, 종목분석, 투자전략공유 등의 다양한 기능을 이용해보세요!",
+            null
+        );
     }
     
     @Override
@@ -155,8 +166,7 @@ public class UserServiceImpl implements UserService {
             
             userRepository.save(user);
         } else {
-            // 신규 사용자 생성 - 임시 닉네임 부여 (나중에 수정)
-            // 이메일이 없으면 임시 이메일 생성
+            // 신규 사용자 생성 - 임시 닉네임 부여 (나중에 수정), 이메일이 없으면 임시 이메일 생성
             String userEmail = email;
             if (userEmail == null || userEmail.isEmpty()) {
                 userEmail = provider.toLowerCase() + "_" + snsId + "@temp.com";
@@ -167,11 +177,9 @@ public class UserServiceImpl implements UserService {
                 }
             }
             
-            // SNS 회원가입 시 임시 닉네임 생성 (고유한 값으로 생성하여 중복 방지)
-            // 형식: "user_" + UUID의 앞 8자리
             String tempNickname = "user_" + UUID.randomUUID().toString().substring(0, 8);
             
-            // 임시 닉네임 중복 확인 (거의 발생하지 않지만 안전을 위해)
+            // 임시 닉네임 중복 확인
             while (userRepository.existsByNickname(tempNickname)) {
                 tempNickname = "user_" + UUID.randomUUID().toString().substring(0, 8);
             }
@@ -179,17 +187,25 @@ public class UserServiceImpl implements UserService {
             user = User.builder()
                 .id(UUID.randomUUID())
                 .email(userEmail)
-                .nickname(tempNickname) // 임시 닉네임 부여
-                .signupType((short) 1) // SNS 가입
+                .nickname(tempNickname) 
+                .signupType((short) 1) 
                 .snsProvider(snsProvider.getCode())
                 .snsId(snsId)
-                .passwordHash(null) // SNS 가입자는 비밀번호 없음
+                .passwordHash(null) 
                 .createdAt(LocalDateTime.now())
                 .isActive(true)
                 .isConnectExchange(false)
                 .build();
             
             userRepository.save(user);
+
+            notificationService.createNotification(
+                user.getId(),
+                NotificationType.SYSTEM,
+                "회원가입을 환영합니다.",
+                "Bitriever 의 새로운 회원이 되신것을 환영합니다. 다양한 거래소를 연동하고 매매일지, 종목분석, 투자전략공유 등의 다양한 기능을 이용해보세요!",
+                null
+            );
             
             // 신규 사용자는 닉네임 설정이 필요함
             // JWT 토큰 발급
