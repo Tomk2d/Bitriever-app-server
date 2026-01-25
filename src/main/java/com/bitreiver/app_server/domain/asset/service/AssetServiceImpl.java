@@ -6,8 +6,6 @@ import com.bitreiver.app_server.domain.asset.repository.AssetRepository;
 import com.bitreiver.app_server.domain.coin.dto.CoinResponse;
 import com.bitreiver.app_server.domain.coin.entity.Coin;
 import com.bitreiver.app_server.domain.coin.repository.CoinRepository;
-import com.bitreiver.app_server.domain.notification.service.NotificationService;
-import com.bitreiver.app_server.domain.notification.enums.NotificationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,10 +27,11 @@ public class AssetServiceImpl implements AssetService {
     private final AssetRepository assetRepository;
     private final CoinRepository coinRepository;
     private final RestTemplate restTemplate;
-    private final NotificationService notificationService;
     
-    @Value("${external.upbit.server.url}")
-    private String upbitServerUrl;
+    @Value("${external.fetch.server.url}")
+    private String fetchServerUrl;
+    
+    private static final String CALLBACK_URL = "/api/callback/sync-complete";
     
     @Override
     public List<AssetResponse> getUserAssets(UUID userId) {
@@ -80,84 +79,45 @@ public class AssetServiceImpl implements AssetService {
             .toList();
     }
     
+    /**
+     * 비동기 자산 및 거래내역 동기화 요청
+     * fetch-server에 비동기 요청을 보내고 즉시 반환
+     * 처리 완료 시 fetch-server가 콜백 API를 호출
+     */
     @Override
     @Async("assetSyncExecutor")
     public void syncAssets(UUID userId) {
+        log.info("비동기 자산 동기화 요청 시작: userId={}", userId);
+        
         try {
-            Map<String, String> requestBody = new HashMap<>();
-            requestBody.put("user_id", userId.toString());
+            // 1. 자산 동기화 비동기 요청
+            Map<String, Object> assetRequestBody = new HashMap<>();
+            assetRequestBody.put("user_id", userId.toString());
+            assetRequestBody.put("callback_url", CALLBACK_URL);
             
-            String url = upbitServerUrl + "/api/upbit/accounts";
-            restTemplate.postForObject(url, requestBody, String.class);
-
-            // 자산 동기화 완료 알림 생성
-            try {
-                notificationService.createNotification(
-                    userId,
-                    NotificationType.USER_UPDATE,
-                    "자산 동기화 완료",
-                    "거래소 자산 정보가 성공적으로 동기화되었습니다.",
-                    null
-                );
-            } catch (Exception e) {
-                log.error("자산 동기화 완료 '알림' 생성 실패: userId={}, error={}", userId, e.getMessage(), e);
-            }
+            String asyncAssetUrl = fetchServerUrl + "/api/assets/sync-all/async";
+            restTemplate.postForEntity(asyncAssetUrl, assetRequestBody, Map.class);
             
+            log.info("비동기 자산 동기화 요청 완료: userId={}", userId);
             
-            // 자산 동기화 후, 매매내역도 업데이트
-            try {
-                Map<String, String> tradingHistoryRequestBody = new HashMap<>();
-                tradingHistoryRequestBody.put("user_id", userId.toString());
-                tradingHistoryRequestBody.put("exchange_provider_str", "UPBIT");
-                
-                String tradingHistoryUrl = upbitServerUrl + "/api/user/updateTradingHistory";
-                restTemplate.postForObject(tradingHistoryUrl, tradingHistoryRequestBody, String.class);
-
-                // 매매내역 동기화 완료 알림 생성
-                try {
-                    notificationService.createNotification(
-                        userId,
-                        NotificationType.USER_UPDATE,
-                        "매매내역 동기화 완료",
-                        "거래소 매매내역 정보가 성공적으로 동기화되었습니다.",
-                        null
-                    );
-                } catch (Exception e) {
-                    log.error("자산 동기화 완료 알림 생성 실패: userId={}, error={}", userId, e.getMessage(), e);
-                }
-                
-            } catch (Exception e) {
-                // 매매내역 업데이트 실패해도 자산 동기화는 성공했으므로 로그만 남기고 계속 진행
-                log.error("매매내역 동기화 실패 (자산 동기화는 성공): userId={}, error={}", userId, e.getMessage(), e);
-
-                // 매매내역 동기화 실패시 알림
-                try {
-                    notificationService.createNotification(
-                        userId,
-                        NotificationType.USER_UPDATE,
-                        "매매내역 동기화 실패",
-                        "거래소 매매내역 정보가 동기화에 실패했습니다. 거래소 토큰 유효기간을 확인해주세요. 지속적으로 실패한다면 FAQ 를 통해서 개발자에게 문의해주세요.",
-                        null
-                    );
-                } catch (Exception e2) {
-                    log.error("매매내역 동기화 완료 '알림' 생성 실패: userId={}, error={}", userId, e2.getMessage(), e2);
-                }
-            }
         } catch (Exception e) {
-            log.error("자산 동기화 실패: userId={}, error={}", userId, e.getMessage(), e);
-
-            // 자산 동기화 실패시 알림
-            try {
-                notificationService.createNotification(
-                    userId,
-                    NotificationType.USER_UPDATE,
-                    "자산 동기화 실패",
-                    "거래소 자산 정보가 동기화에 실패했습니다. 거래소 토큰 유효기간을 확인해주세요. 지속적으로 실패한다면 FAQ 를 통해서 개발자에게 문의해주세요.",
-                    null
-                );
-            } catch (Exception e2) {
-                log.error("자산 동기화 완료 '알림' 생성 실패: userId={}, error={}", userId, e2.getMessage(), e2);
-            }
+            log.error("비동기 자산 동기화 요청 실패: userId={}, error={}", userId, e.getMessage(), e);
+        }
+        
+        try {
+            // 2. 거래내역 동기화 비동기 요청 (자산 동기화와 별도로 진행)
+            Map<String, Object> tradingRequestBody = new HashMap<>();
+            tradingRequestBody.put("user_id", userId.toString());
+            tradingRequestBody.put("exchanges", List.of("UPBIT", "COINONE"));  // 지원하는 모든 거래소
+            tradingRequestBody.put("callback_url", CALLBACK_URL);
+            
+            String asyncTradingUrl = fetchServerUrl + "/api/user/updateTradingHistory/async";
+            restTemplate.postForEntity(asyncTradingUrl, tradingRequestBody, Map.class);
+            
+            log.info("비동기 거래내역 동기화 요청 완료: userId={}", userId);
+            
+        } catch (Exception e) {
+            log.error("비동기 거래내역 동기화 요청 실패: userId={}, error={}", userId, e.getMessage(), e);
         }
     }
 }

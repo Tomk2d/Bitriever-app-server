@@ -14,13 +14,13 @@ public class RestTemplateConfig {
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(5000);
-        factory.setReadTimeout(30000);
+        factory.setConnectTimeout(10000);  // 10초
+        factory.setReadTimeout(120000);    // 120초 (2분) - 최초 동기화 시 오래 걸릴 수 있음
         
         return builder
             .requestFactory(() -> factory)
-            .setConnectTimeout(Duration.ofSeconds(5))
-            .setReadTimeout(Duration.ofSeconds(30))
+            .setConnectTimeout(Duration.ofSeconds(10))
+            .setReadTimeout(Duration.ofSeconds(120))  // 최초 동기화 시 2017년부터 조회하면 오래 걸림
             .build();
     }
 }

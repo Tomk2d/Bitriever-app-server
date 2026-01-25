@@ -19,6 +19,9 @@ import java.util.concurrent.TimeUnit;
 public class WebClientConfig {
     @Value("${external.upbit.api.url:https://api.upbit.com}")
     private String upbitApiUrl;
+    
+    @Value("${external.coinone.api.url:https://api.coinone.co.kr}")
+    private String coinoneApiUrl;
 
     @Bean
     public WebClient upbitTickerWebClient() {
@@ -45,6 +48,35 @@ public class WebClientConfig {
         
         return WebClient.builder()
             .baseUrl(upbitApiUrl)
+            .clientConnector(new ReactorClientHttpConnector(httpClient))
+            .build();
+    }
+    
+    @Bean
+    public WebClient coinoneTickerWebClient() {
+        // 연결 풀 설정
+        ConnectionProvider connectionProvider = ConnectionProvider.builder("coinone-ticker")
+            .maxConnections(50)
+            .maxIdleTime(Duration.ofSeconds(10))
+            .maxLifeTime(Duration.ofSeconds(60))
+            .pendingAcquireTimeout(Duration.ofSeconds(10))
+            .evictInBackground(Duration.ofSeconds(10))
+            .build();
+
+        // EventLoopGroup 명시적 설정 (DNS resolver executor 문제 해결)
+        NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(4);
+
+        HttpClient httpClient = HttpClient.create(connectionProvider)
+            .runOn(eventLoopGroup)  // EventLoopGroup 명시적 설정
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000)
+            .responseTimeout(Duration.ofSeconds(5))
+            .doOnConnected(conn -> 
+                conn.addHandlerLast(new ReadTimeoutHandler(5, TimeUnit.SECONDS))
+                    .addHandlerLast(new WriteTimeoutHandler(2, TimeUnit.SECONDS))
+            );
+        
+        return WebClient.builder()
+            .baseUrl(coinoneApiUrl)
             .clientConnector(new ReactorClientHttpConnector(httpClient))
             .build();
     }
