@@ -38,9 +38,6 @@ public class SyncCallbackController {
             
             UUID userId = UUID.fromString(userIdStr);
             
-            log.info("동기화 콜백 수신: userId={}, syncType={}, success={}, message={}", 
-                userId, syncType, success, message);
-            
             if ("ASSET".equals(syncType)) {
                 handleAssetSyncCallback(userId, callbackData, success, message);
             } else if ("TRADING_HISTORY".equals(syncType)) {
@@ -92,8 +89,7 @@ public class SyncCallbackController {
             List<Integer> savedIds = (List<Integer>) callbackData.get("saved_ids");
             if (savedIds != null && !savedIds.isEmpty()) {
                 try {
-                    int createdCount = diaryService.createDiariesForTradingHistories(savedIds);
-                    log.info("매매일지 자동 생성 완료: userId={}, count={}", userId, createdCount);
+                    diaryService.createDiariesForTradingHistories(savedIds);
                 } catch (Exception e) {
                     log.error("매매일지 자동 생성 실패: userId={}, error={}", userId, e.getMessage());
                 }

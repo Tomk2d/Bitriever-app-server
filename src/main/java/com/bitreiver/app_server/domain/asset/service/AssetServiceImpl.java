@@ -87,8 +87,6 @@ public class AssetServiceImpl implements AssetService {
     @Override
     @Async("assetSyncExecutor")
     public void syncAssets(UUID userId) {
-        log.info("비동기 자산 동기화 요청 시작: userId={}", userId);
-        
         try {
             // 1. 자산 동기화 비동기 요청
             Map<String, Object> assetRequestBody = new HashMap<>();
@@ -97,8 +95,6 @@ public class AssetServiceImpl implements AssetService {
             
             String asyncAssetUrl = fetchServerUrl + "/api/assets/sync-all/async";
             restTemplate.postForEntity(asyncAssetUrl, assetRequestBody, Map.class);
-            
-            log.info("비동기 자산 동기화 요청 완료: userId={}", userId);
             
         } catch (Exception e) {
             log.error("비동기 자산 동기화 요청 실패: userId={}, error={}", userId, e.getMessage(), e);
@@ -113,8 +109,6 @@ public class AssetServiceImpl implements AssetService {
             
             String asyncTradingUrl = fetchServerUrl + "/api/user/updateTradingHistory/async";
             restTemplate.postForEntity(asyncTradingUrl, tradingRequestBody, Map.class);
-            
-            log.info("비동기 거래내역 동기화 요청 완료: userId={}", userId);
             
         } catch (Exception e) {
             log.error("비동기 거래내역 동기화 요청 실패: userId={}, error={}", userId, e.getMessage(), e);
