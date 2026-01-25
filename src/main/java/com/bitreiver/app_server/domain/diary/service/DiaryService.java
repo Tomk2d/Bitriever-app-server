@@ -22,5 +22,14 @@ public interface DiaryService {
         LocalDateTime endDate
     );
     List<String> extractAllImagePaths(String content);
+    
+    /**
+     * 새로 저장된 TradingHistory에 대해 빈 매매일지를 자동 생성합니다.
+     * 이미 존재하는 매매일지는 건너뜁니다.
+     * 
+     * @param tradingHistoryIds 새로 저장된 TradingHistory ID 목록
+     * @return 생성된 매매일지 개수
+     */
+    int createDiariesForTradingHistories(List<Integer> tradingHistoryIds);
 }
 

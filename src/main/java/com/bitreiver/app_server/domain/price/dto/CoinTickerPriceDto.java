@@ -123,4 +123,102 @@ public class CoinTickerPriceDto {
             .timestamp(ticker.getTimestamp())
             .build();
     }
+    
+    public static CoinTickerPriceDto from(CoinoneTickerResponse.CoinoneTicker ticker) {
+        // String을 BigDecimal로 변환
+        BigDecimal last = parseBigDecimal(ticker.getLast());
+        BigDecimal first = parseBigDecimal(ticker.getFirst());
+        BigDecimal high = parseBigDecimal(ticker.getHigh());
+        BigDecimal low = parseBigDecimal(ticker.getLow());
+        BigDecimal yesterdayLast = parseBigDecimal(ticker.getYesterdayLast());
+        BigDecimal quoteVolume = parseBigDecimal(ticker.getQuoteVolume());
+        BigDecimal targetVolume = parseBigDecimal(ticker.getTargetVolume());
+        
+        // marketCode 생성: target_currency + "-" + quote_currency = "BTC-KRW"
+        String market = ticker.getTargetCurrency() + "-" + ticker.getQuoteCurrency();
+        
+        // 전일 종가 대비 변화 계산
+        BigDecimal changePrice = null;
+        BigDecimal changeRate = null;
+        BigDecimal signedChangePrice = null;
+        BigDecimal signedChangeRate = null;
+        String change = "EVEN";
+        
+        if (yesterdayLast != null && yesterdayLast.compareTo(BigDecimal.ZERO) != 0) {
+            // 변화가 계산
+            changePrice = last.subtract(yesterdayLast);
+            signedChangePrice = changePrice;
+            
+            // 변화율 계산
+            signedChangeRate = changePrice.divide(yesterdayLast, 8, java.math.RoundingMode.HALF_UP);
+            changeRate = signedChangeRate.abs();
+            
+            // change 상태 결정
+            if (changePrice.compareTo(BigDecimal.ZERO) > 0) {
+                change = "RISE";
+            } else if (changePrice.compareTo(BigDecimal.ZERO) < 0) {
+                change = "FALL";
+            } else {
+                change = "EVEN";
+            }
+        }
+        
+        // 타임스탬프에서 날짜/시간 추출 (간단한 형식)
+        String tradeDate = null;
+        String tradeTime = null;
+        String tradeDateKst = null;
+        String tradeTimeKst = null;
+        Long tradeTimestamp = ticker.getTimestamp();
+        
+        if (tradeTimestamp != null) {
+            java.time.Instant instant = java.time.Instant.ofEpochMilli(tradeTimestamp);
+            java.time.ZonedDateTime utcTime = instant.atZone(java.time.ZoneId.of("UTC"));
+            java.time.ZonedDateTime kstTime = instant.atZone(java.time.ZoneId.of("Asia/Seoul"));
+            
+            tradeDate = utcTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+            tradeTime = utcTime.format(java.time.format.DateTimeFormatter.ofPattern("HHmmss"));
+            tradeDateKst = kstTime.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+            tradeTimeKst = kstTime.format(java.time.format.DateTimeFormatter.ofPattern("HHmmss"));
+        }
+        
+        return CoinTickerPriceDto.builder()
+            .market(market)
+            .tradeDate(tradeDate)
+            .tradeTime(tradeTime)
+            .tradeDateKst(tradeDateKst)
+            .tradeTimeKst(tradeTimeKst)
+            .tradeTimestamp(tradeTimestamp)
+            .openingPrice(first)
+            .highPrice(high)
+            .lowPrice(low)
+            .tradePrice(last)
+            .prevClosingPrice(yesterdayLast)
+            .change(change)
+            .changePrice(changePrice)
+            .changeRate(changeRate)
+            .signedChangePrice(signedChangePrice)
+            .signedChangeRate(signedChangeRate)
+            .tradeVolume(null) // 코인원 API에는 최근 거래 수량이 없음
+            .accTradePrice(null) // 코인원 API에는 UTC 0시 기준 누적 거래 금액이 없음
+            .accTradePrice24h(quoteVolume)
+            .accTradeVolume(null) // 코인원 API에는 UTC 0시 기준 누적 거래량이 없음
+            .accTradeVolume24h(targetVolume)
+            .highest52WeekPrice(null) // 코인원 API에는 52주 신고가 정보가 없음
+            .highest52WeekDate(null)
+            .lowest52WeekPrice(null) // 코인원 API에는 52주 신저가 정보가 없음
+            .lowest52WeekDate(null)
+            .timestamp(tradeTimestamp)
+            .build();
+    }
+    
+    private static BigDecimal parseBigDecimal(String value) {
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
 }

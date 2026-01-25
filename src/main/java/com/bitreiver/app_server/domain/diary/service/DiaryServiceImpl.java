@@ -215,5 +215,53 @@ public class DiaryServiceImpl implements DiaryService {
             })
             .toList();
     }
+    
+    @Override
+    @Transactional
+    public int createDiariesForTradingHistories(List<Integer> tradingHistoryIds) {
+        if (tradingHistoryIds == null || tradingHistoryIds.isEmpty()) {
+            return 0;
+        }
+        
+        int createdCount = 0;
+        
+        for (Integer tradingHistoryId : tradingHistoryIds) {
+            try {
+                // 이미 존재하는 매매일지는 건너뛰기
+                if (diaryRepository.existsByTradingHistoryId(tradingHistoryId)) {
+                    log.debug("매매일지 자동 생성 스킵 - 이미 존재: tradingHistoryId={}", tradingHistoryId);
+                    continue;
+                }
+                
+                // TradingHistory 존재 여부 확인
+                if (!tradingHistoryRepository.existsById(tradingHistoryId)) {
+                    log.warn("매매일지 자동 생성 스킵 - TradingHistory 없음: tradingHistoryId={}", tradingHistoryId);
+                    continue;
+                }
+                
+                // 빈 매매일지 생성 (content, tags, tradingMind는 NULL)
+                Diary diary = Diary.builder()
+                    .tradingHistoryId(tradingHistoryId)
+                    .content(null)
+                    .tags(null)
+                    .tradingMind(null)
+                    .build();
+                
+                diaryRepository.save(diary);
+                createdCount++;
+                
+                log.debug("매매일지 자동 생성 완료: tradingHistoryId={}, diaryId={}", tradingHistoryId, diary.getId());
+            } catch (Exception e) {
+                log.error("매매일지 자동 생성 실패: tradingHistoryId={}, error={}", tradingHistoryId, e.getMessage());
+                // 개별 실패는 전체 트랜잭션에 영향을 주지 않도록 처리
+            }
+        }
+        
+        if (createdCount > 0) {
+            log.info("매매일지 자동 생성 완료: 총 {}개", createdCount);
+        }
+        
+        return createdCount;
+    }
 }
 
