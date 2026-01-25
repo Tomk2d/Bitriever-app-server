@@ -68,6 +68,10 @@ public class User {
     @Column(name = "connected_exchanges", columnDefinition = "jsonb")
     private String connectedExchanges;
     
+    @Column(name = "profile_url", length = 50)
+    @Builder.Default
+    private String profileUrl = "/profile1";
+    
     public void updateLastLogin() {
         this.lastLoginAt = LocalDateTime.now();
     }

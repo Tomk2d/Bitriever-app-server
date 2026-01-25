@@ -91,6 +91,7 @@ public class UserServiceImpl implements UserService {
             .userId(user.getId())
             .email(user.getEmail())
             .nickname(user.getNickname())
+            .profileUrl(user.getProfileUrl())
             .accessToken(accessToken)
             .refreshToken(refreshToken)
             .build();
@@ -136,6 +137,7 @@ public class UserServiceImpl implements UserService {
             .userId(user.getId())
             .email(user.getEmail())
             .nickname(user.getNickname())
+            .profileUrl(user.getProfileUrl())
             .accessToken(newAccessToken)
             .refreshToken(newRefreshToken)
             .build();
@@ -216,6 +218,7 @@ public class UserServiceImpl implements UserService {
                 .userId(user.getId())
                 .email(user.getEmail())
                 .nickname(tempNickname) // 임시 닉네임 반환
+                .profileUrl(user.getProfileUrl())
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .requiresNickname(true) // 닉네임 설정 필요
@@ -231,6 +234,7 @@ public class UserServiceImpl implements UserService {
             .userId(user.getId())
             .email(user.getEmail())
             .nickname(user.getNickname())
+            .profileUrl(user.getProfileUrl())
             .accessToken(accessToken)
             .refreshToken(refreshToken)
             .requiresNickname(false) // 기존 사용자는 닉네임 설정 불필요

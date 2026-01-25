@@ -28,6 +28,9 @@ public class CommunityResponse {
     @Schema(description = "작성자 닉네임", example = "user123")
     private String userNickname;
     
+    @Schema(description = "작성자 프로필 이미지 URL", example = "/profile1")
+    private String userProfileUrl;
+    
     @Schema(description = "카테고리", example = "FREE")
     private String category;
     
@@ -55,11 +58,12 @@ public class CommunityResponse {
     @Schema(description = "수정일시")
     private LocalDateTime updatedAt;
     
-    public static CommunityResponse from(Community community, String userNickname, Long likeCount, Long dislikeCount, ReactionType userReaction) {
+    public static CommunityResponse from(Community community, String userNickname, String userProfileUrl, Long likeCount, Long dislikeCount, ReactionType userReaction) {
         return CommunityResponse.builder()
             .id(community.getId())
             .userId(community.getUserId())
             .userNickname(userNickname)
+            .userProfileUrl(userProfileUrl)
             .category(community.getCategory() != null ? community.getCategory().getCode() : null)
             .title(community.getTitle())
             .content(community.getContent())

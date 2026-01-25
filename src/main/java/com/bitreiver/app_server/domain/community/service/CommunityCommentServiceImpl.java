@@ -76,7 +76,7 @@ public class CommunityCommentServiceImpl implements CommunityCommentService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
-        return CommunityCommentResponse.from(comment, user.getNickname(), 0L, 0L, null, List.of());
+        return CommunityCommentResponse.from(comment, user.getNickname(), user.getProfileUrl(), 0L, 0L, null, List.of());
     }
     
     @Override
@@ -110,13 +110,13 @@ public class CommunityCommentServiceImpl implements CommunityCommentService {
             replies.forEach(reply -> allUserIds.add(reply.getUserId()))
         );
         
-        Map<UUID, String> userNicknameMap = userRepository.findAllById(allUserIds).stream()
-            .collect(Collectors.toMap(User::getId, User::getNickname));
+        Map<UUID, User> userMap = userRepository.findAllById(allUserIds).stream()
+            .collect(Collectors.toMap(User::getId, user -> user));
         
         // 최상위 댓글을 응답으로 변환
         List<CommunityCommentResponse> content = topLevelComments.getContent().stream()
             .map(comment -> {
-                String userNickname = userNicknameMap.get(comment.getUserId());
+                User commentUser = userMap.get(comment.getUserId());
                 long likeCount = communityCommentReactionService.getLikeCount(comment.getId());
                 long dislikeCount = communityCommentReactionService.getDislikeCount(comment.getId());
                 ReactionType userReaction = userId != null ? 
@@ -125,20 +125,26 @@ public class CommunityCommentServiceImpl implements CommunityCommentService {
                 // 대댓글 변환
                 List<CommunityCommentResponse> replies = repliesMap.getOrDefault(comment.getId(), List.of()).stream()
                     .map(reply -> {
-                        String replyUserNickname = userNicknameMap.get(reply.getUserId());
+                        User replyUser = userMap.get(reply.getUserId());
                         long replyLikeCount = communityCommentReactionService.getLikeCount(reply.getId());
                         long replyDislikeCount = communityCommentReactionService.getDislikeCount(reply.getId());
                         ReactionType replyUserReaction = userId != null ? 
                             communityCommentReactionService.getUserReaction(userId, reply.getId()) : null;
                         
                         return CommunityCommentResponse.from(
-                            reply, replyUserNickname, replyLikeCount, replyDislikeCount, replyUserReaction, List.of()
+                            reply, 
+                            replyUser != null ? replyUser.getNickname() : null,
+                            replyUser != null ? replyUser.getProfileUrl() : null,
+                            replyLikeCount, replyDislikeCount, replyUserReaction, List.of()
                         );
                     })
                     .collect(Collectors.toList());
                 
                 return CommunityCommentResponse.from(
-                    comment, userNickname, likeCount, dislikeCount, userReaction, replies
+                    comment, 
+                    commentUser != null ? commentUser.getNickname() : null,
+                    commentUser != null ? commentUser.getProfileUrl() : null,
+                    likeCount, dislikeCount, userReaction, replies
                 );
             })
             .collect(Collectors.toList());
@@ -182,6 +188,7 @@ public class CommunityCommentServiceImpl implements CommunityCommentService {
                 return CommunityCommentResponse.from(
                     reply,
                     replyUser != null ? replyUser.getNickname() : null,
+                    replyUser != null ? replyUser.getProfileUrl() : null,
                     replyLikeCount,
                     replyDislikeCount,
                     replyUserReaction,
@@ -190,7 +197,7 @@ public class CommunityCommentServiceImpl implements CommunityCommentService {
             })
             .collect(Collectors.toList());
         
-        return CommunityCommentResponse.from(comment, user.getNickname(), likeCount, dislikeCount, userReaction, replyResponses);
+        return CommunityCommentResponse.from(comment, user.getNickname(), user.getProfileUrl(), likeCount, dislikeCount, userReaction, replyResponses);
     }
     
     @Override
