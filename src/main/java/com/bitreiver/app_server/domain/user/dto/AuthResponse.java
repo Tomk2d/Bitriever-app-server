@@ -15,6 +15,7 @@ public class AuthResponse {
     private UUID userId;
     private String email;
     private String nickname;
+    private String profileUrl;
     private String accessToken;
     private String refreshToken;
     @Builder.Default

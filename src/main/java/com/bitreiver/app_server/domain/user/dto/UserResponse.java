@@ -25,10 +25,12 @@ public class UserResponse {
     private String email;
     private String nickname;
     private Short signupType;
+    private Short snsProvider;
     private LocalDateTime createdAt;
     private Boolean isActive;
     private Boolean isConnectExchange;
     private List<ExchangeTypeInfo> connectedExchanges;
+    private String profileUrl;
     
     private static final ObjectMapper objectMapper = new ObjectMapper();
     
@@ -40,10 +42,12 @@ public class UserResponse {
             .email(user.getEmail())
             .nickname(user.getNickname())
             .signupType(user.getSignupType())
+            .snsProvider(user.getSnsProvider())
             .createdAt(user.getCreatedAt())
             .isActive(user.getIsActive())
             .isConnectExchange(user.getIsConnectExchange())
             .connectedExchanges(connectedExchanges)
+            .profileUrl(user.getProfileUrl())
             .build();
     }
     

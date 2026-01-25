@@ -26,6 +26,9 @@ public class CommunityListResponse {
     @Schema(description = "작성자 닉네임", example = "user123")
     private String userNickname;
     
+    @Schema(description = "작성자 프로필 이미지 URL", example = "/profile1")
+    private String userProfileUrl;
+    
     @Schema(description = "카테고리", example = "FREE")
     private String category;
     

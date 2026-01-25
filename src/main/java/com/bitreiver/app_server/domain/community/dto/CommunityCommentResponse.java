@@ -31,6 +31,9 @@ public class CommunityCommentResponse {
     @Schema(description = "작성자 닉네임", example = "user123")
     private String userNickname;
     
+    @Schema(description = "작성자 프로필 이미지 URL", example = "/profile1")
+    private String userProfileUrl;
+    
     @Schema(description = "부모 댓글 ID (대댓글인 경우)", example = "1")
     private Long parentId;
     
@@ -61,6 +64,7 @@ public class CommunityCommentResponse {
     public static CommunityCommentResponse from(
         CommunityComment comment,
         String userNickname,
+        String userProfileUrl,
         Long likeCount,
         Long dislikeCount,
         ReactionType userReaction,
@@ -71,6 +75,7 @@ public class CommunityCommentResponse {
             .communityId(comment.getCommunityId())
             .userId(comment.getUserId())
             .userNickname(userNickname)
+            .userProfileUrl(userProfileUrl)
             .parentId(comment.getParentId())
             .content(comment.getDeleted() ? "삭제된 댓글입니다." : comment.getContent())
             .likeCount(likeCount != null ? likeCount : 0L)

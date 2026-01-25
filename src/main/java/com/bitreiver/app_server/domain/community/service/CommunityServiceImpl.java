@@ -64,7 +64,7 @@ public class CommunityServiceImpl implements CommunityService {
         
         communityRepository.save(community);
         
-        return CommunityResponse.from(community, null, 0L, 0L, null);
+        return CommunityResponse.from(community, null, null, 0L, 0L, null);
     }
     
     @Override
@@ -79,7 +79,7 @@ public class CommunityServiceImpl implements CommunityService {
         long dislikeCount = communityReactionService.getDislikeCount(id);
         ReactionType userReaction = userId != null ? communityReactionService.getUserReaction(userId, id) : null;
         
-        return CommunityResponse.from(community, user.getNickname(), likeCount, dislikeCount, userReaction);
+        return CommunityResponse.from(community, user.getNickname(), user.getProfileUrl(), likeCount, dislikeCount, userReaction);
     }
     
     @Override
@@ -113,6 +113,7 @@ public class CommunityServiceImpl implements CommunityService {
                     .id(community.getId())
                     .userId(community.getUserId())
                     .userNickname(user != null ? user.getNickname() : null)
+                    .userProfileUrl(user != null ? user.getProfileUrl() : null)
                     .category(community.getCategory() != null ? community.getCategory().getCode() : null)
                     .title(community.getTitle())
                     .hashtags(community.getHashtags())
@@ -193,6 +194,7 @@ public class CommunityServiceImpl implements CommunityService {
                     .id(community.getId())
                     .userId(community.getUserId())
                     .userNickname(user != null ? user.getNickname() : null)
+                    .userProfileUrl(user != null ? user.getProfileUrl() : null)
                     .category(community.getCategory() != null ? community.getCategory().getCode() : null)
                     .title(community.getTitle())
                     .hashtags(community.getHashtags())
@@ -248,7 +250,7 @@ public class CommunityServiceImpl implements CommunityService {
         long dislikeCount = communityReactionService.getDislikeCount(id);
         ReactionType userReaction = communityReactionService.getUserReaction(userId, id);
         
-        return CommunityResponse.from(community, user.getNickname(), likeCount, dislikeCount, userReaction);
+        return CommunityResponse.from(community, user.getNickname(), user.getProfileUrl(), likeCount, dislikeCount, userReaction);
     }
     
     @Override
@@ -331,6 +333,7 @@ public class CommunityServiceImpl implements CommunityService {
                     .id(community.getId())
                     .userId(community.getUserId())
                     .userNickname(user.getNickname())
+                    .userProfileUrl(user.getProfileUrl())
                     .category(community.getCategory() != null ? community.getCategory().getCode() : null)
                     .title(community.getTitle())
                     .hashtags(community.getHashtags())
@@ -373,6 +376,7 @@ public class CommunityServiceImpl implements CommunityService {
                     .id(community.getId())
                     .userId(community.getUserId())
                     .userNickname(user != null ? user.getNickname() : null)
+                    .userProfileUrl(user != null ? user.getProfileUrl() : null)
                     .category(community.getCategory() != null ? community.getCategory().getCode() : null)
                     .title(community.getTitle())
                     .hashtags(community.getHashtags())
