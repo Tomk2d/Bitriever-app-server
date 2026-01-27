@@ -35,6 +35,7 @@ public class CommunityServiceImpl implements CommunityService {
     private final UserRepository userRepository;
     private final CommunityReactionService communityReactionService;
     private final CommunityImageService communityImageService;
+    private final CommunityCommentService communityCommentService;
     
     @Override
     @Transactional
@@ -102,6 +103,7 @@ public class CommunityServiceImpl implements CommunityService {
                     .orElse(null);
                 long likeCount = communityReactionService.getLikeCount(community.getId());
                 long dislikeCount = communityReactionService.getDislikeCount(community.getId());
+                long commentCount = communityCommentService.getCommentCount(community.getId());
                 com.bitreiver.app_server.domain.community.enums.ReactionType userReaction = userId != null ? 
                     communityReactionService.getUserReaction(userId, community.getId()) : null;
                 
@@ -119,6 +121,7 @@ public class CommunityServiceImpl implements CommunityService {
                     .hashtags(community.getHashtags())
                     .likeCount(likeCount)
                     .dislikeCount(dislikeCount)
+                    .commentCount(commentCount)
                     .userReaction(userReaction != null ? userReaction.getCode() : null)
                     .thumbnailImageUrl(thumbnailImageUrl)
                     .previewText(previewText)
@@ -183,6 +186,7 @@ public class CommunityServiceImpl implements CommunityService {
                     .orElse(null);
                 long likeCount = communityReactionService.getLikeCount(community.getId());
                 long dislikeCount = communityReactionService.getDislikeCount(community.getId());
+                long commentCount = communityCommentService.getCommentCount(community.getId());
                 com.bitreiver.app_server.domain.community.enums.ReactionType userReaction = userId != null ? 
                     communityReactionService.getUserReaction(userId, community.getId()) : null;
                 
@@ -200,6 +204,7 @@ public class CommunityServiceImpl implements CommunityService {
                     .hashtags(community.getHashtags())
                     .likeCount(likeCount)
                     .dislikeCount(dislikeCount)
+                    .commentCount(commentCount)
                     .userReaction(userReaction != null ? userReaction.getCode() : null)
                     .thumbnailImageUrl(thumbnailImageUrl)
                     .previewText(previewText)
@@ -322,6 +327,7 @@ public class CommunityServiceImpl implements CommunityService {
             .map(community -> {
                 long likeCount = communityReactionService.getLikeCount(community.getId());
                 long dislikeCount = communityReactionService.getDislikeCount(community.getId());
+                long commentCount = communityCommentService.getCommentCount(community.getId());
                 com.bitreiver.app_server.domain.community.enums.ReactionType userReaction = 
                     communityReactionService.getUserReaction(userId, community.getId());
                 
@@ -339,6 +345,7 @@ public class CommunityServiceImpl implements CommunityService {
                     .hashtags(community.getHashtags())
                     .likeCount(likeCount)
                     .dislikeCount(dislikeCount)
+                    .commentCount(commentCount)
                     .userReaction(userReaction != null ? userReaction.getCode() : null)
                     .thumbnailImageUrl(thumbnailImageUrl)
                     .previewText(previewText)
@@ -365,6 +372,7 @@ public class CommunityServiceImpl implements CommunityService {
                     .orElse(null);
                 long likeCount = communityReactionService.getLikeCount(community.getId());
                 long dislikeCount = communityReactionService.getDislikeCount(community.getId());
+                long commentCount = communityCommentService.getCommentCount(community.getId());
                 com.bitreiver.app_server.domain.community.enums.ReactionType userReaction = userId != null ? 
                     communityReactionService.getUserReaction(userId, community.getId()) : null;
                 
@@ -382,6 +390,7 @@ public class CommunityServiceImpl implements CommunityService {
                     .hashtags(community.getHashtags())
                     .likeCount(likeCount)
                     .dislikeCount(dislikeCount)
+                    .commentCount(commentCount)
                     .userReaction(userReaction != null ? userReaction.getCode() : null)
                     .thumbnailImageUrl(thumbnailImageUrl)
                     .previewText(previewText)
