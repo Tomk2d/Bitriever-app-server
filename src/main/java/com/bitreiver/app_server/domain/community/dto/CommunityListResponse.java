@@ -44,6 +44,9 @@ public class CommunityListResponse {
     @Schema(description = "싫어요 개수", example = "2")
     private Long dislikeCount;
     
+    @Schema(description = "댓글 개수", example = "15")
+    private Long commentCount;
+    
     @Schema(description = "사용자의 반응 (LIKE, DISLIKE, null)", example = "LIKE")
     private String userReaction;
     
