@@ -17,7 +17,6 @@ public class AuthResponse {
     private String nickname;
     private String profileUrl;
     private String accessToken;
-    private String refreshToken;
     @Builder.Default
     private Boolean requiresNickname = false; // SNS 회원가입 시 닉네임 설정 필요 여부
 }

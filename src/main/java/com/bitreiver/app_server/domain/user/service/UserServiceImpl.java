@@ -1,6 +1,7 @@
 package com.bitreiver.app_server.domain.user.service;
 
 import com.bitreiver.app_server.domain.user.dto.AuthResponse;
+import com.bitreiver.app_server.domain.user.dto.AuthResult;
 import com.bitreiver.app_server.domain.user.dto.UserLoginRequest;
 import com.bitreiver.app_server.domain.user.dto.UserResponse;
 import com.bitreiver.app_server.domain.user.dto.UserSignUpRequest;
@@ -69,7 +70,7 @@ public class UserServiceImpl implements UserService {
     
     @Override
     @Transactional
-    public AuthResponse login(UserLoginRequest request) {
+    public AuthResult login(UserLoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
@@ -87,19 +88,19 @@ public class UserServiceImpl implements UserService {
         String accessToken = jwtTokenProvider.generateAccessToken(user.getId());
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
         
-        return AuthResponse.builder()
+        AuthResponse authResponse = AuthResponse.builder()
             .userId(user.getId())
             .email(user.getEmail())
             .nickname(user.getNickname())
             .profileUrl(user.getProfileUrl())
             .accessToken(accessToken)
-            .refreshToken(refreshToken)
             .build();
+        return AuthResult.builder().authResponse(authResponse).refreshToken(refreshToken).build();
     }
     
     @Override
     @Transactional
-    public AuthResponse refreshToken(String refreshToken) {
+    public AuthResult refreshToken(String refreshToken) {
         // Refresh token 유효성 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
@@ -133,19 +134,19 @@ public class UserServiceImpl implements UserService {
         String newAccessToken = jwtTokenProvider.generateAccessToken(user.getId());
         String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
         
-        return AuthResponse.builder()
+        AuthResponse authResponse = AuthResponse.builder()
             .userId(user.getId())
             .email(user.getEmail())
             .nickname(user.getNickname())
             .profileUrl(user.getProfileUrl())
             .accessToken(newAccessToken)
-            .refreshToken(newRefreshToken)
             .build();
+        return AuthResult.builder().authResponse(authResponse).refreshToken(newRefreshToken).build();
     }
     
     @Override
     @Transactional
-    public AuthResponse processOAuth2User(String provider, String snsId, String email, String nickname) {
+    public AuthResult processOAuth2User(String provider, String snsId, String email, String nickname) {
         SnsProvider snsProvider = SnsProvider.fromRegistrationId(provider);
         
         // 기존 사용자 조회 (snsProvider와 snsId로)
@@ -214,15 +215,15 @@ public class UserServiceImpl implements UserService {
             String accessToken = jwtTokenProvider.generateAccessToken(user.getId());
             String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
             
-            return AuthResponse.builder()
+            AuthResponse authResponse = AuthResponse.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
                 .nickname(tempNickname) // 임시 닉네임 반환
                 .profileUrl(user.getProfileUrl())
                 .accessToken(accessToken)
-                .refreshToken(refreshToken)
                 .requiresNickname(true) // 닉네임 설정 필요
                 .build();
+            return AuthResult.builder().authResponse(authResponse).refreshToken(refreshToken).build();
         }
         
         // 기존 사용자는 정상적으로 토큰 발급
@@ -230,15 +231,15 @@ public class UserServiceImpl implements UserService {
         String accessToken = jwtTokenProvider.generateAccessToken(user.getId());
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
         
-        return AuthResponse.builder()
+        AuthResponse authResponse = AuthResponse.builder()
             .userId(user.getId())
             .email(user.getEmail())
             .nickname(user.getNickname())
             .profileUrl(user.getProfileUrl())
             .accessToken(accessToken)
-            .refreshToken(refreshToken)
             .requiresNickname(false) // 기존 사용자는 닉네임 설정 불필요
             .build();
+        return AuthResult.builder().authResponse(authResponse).refreshToken(refreshToken).build();
     }
     
     @Override

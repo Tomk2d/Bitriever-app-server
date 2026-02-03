@@ -1,6 +1,8 @@
 package com.bitreiver.app_server.global.security.oauth2;
 
-import com.bitreiver.app_server.domain.user.dto.AuthResponse;
+import com.bitreiver.app_server.domain.user.dto.AuthResult;
+import com.bitreiver.app_server.domain.user.dto.OAuth2CodePayload;
+import com.bitreiver.app_server.domain.user.service.OAuth2CodeService;
 import com.bitreiver.app_server.domain.user.service.UserService;
 import com.bitreiver.app_server.global.common.exception.CustomException;
 import com.bitreiver.app_server.global.common.exception.ErrorCode;
@@ -27,10 +29,13 @@ import java.nio.charset.StandardCharsets;
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     
     private final UserService userService;
+    private final OAuth2CodeService oAuth2CodeService;
     
     @Autowired
-    public OAuth2AuthenticationSuccessHandler(@Lazy UserService userService) {
+    public OAuth2AuthenticationSuccessHandler(@Lazy UserService userService,
+                                              @Lazy OAuth2CodeService oAuth2CodeService) {
         this.userService = userService;
+        this.oAuth2CodeService = oAuth2CodeService;
     }
     
     @Value("${oauth2.redirect.uri:http://localhost:3000/api/auth/callback}")
@@ -97,27 +102,24 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             String nickname = userInfo.getNickname();
             
             // OAuth2 사용자 처리 및 JWT 토큰 발급
-            AuthResponse authResponse = userService.processOAuth2User(registrationId, providerId, email, nickname);
+            AuthResult result = userService.processOAuth2User(registrationId, providerId, email, nickname);
+            OAuth2CodePayload payload = OAuth2CodePayload.from(result);
+            String code = oAuth2CodeService.save(payload);
             
-            // 리다이렉트 URL 생성 (토큰을 쿼리 파라미터로 전달)
+            // 리다이렉트 URL 생성 (code와 사용자 정보만 전달, 토큰은 URL에 넣지 않음)
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(redirectUri + "/" + registrationId)
-                .queryParam("accessToken", URLEncoder.encode(authResponse.getAccessToken(), StandardCharsets.UTF_8))
-                .queryParam("refreshToken", URLEncoder.encode(authResponse.getRefreshToken(), StandardCharsets.UTF_8))
-                .queryParam("userId", authResponse.getUserId().toString())
-                .queryParam("email", URLEncoder.encode(authResponse.getEmail(), StandardCharsets.UTF_8));
+                .queryParam("code", code)
+                .queryParam("userId", result.getAuthResponse().getUserId().toString())
+                .queryParam("email", URLEncoder.encode(result.getAuthResponse().getEmail() != null ? result.getAuthResponse().getEmail() : "", StandardCharsets.UTF_8));
             
-            // 닉네임이 있으면 추가
-            if (authResponse.getNickname() != null) {
-                uriBuilder.queryParam("nickname", URLEncoder.encode(authResponse.getNickname(), StandardCharsets.UTF_8));
+            if (result.getAuthResponse().getNickname() != null) {
+                uriBuilder.queryParam("nickname", URLEncoder.encode(result.getAuthResponse().getNickname(), StandardCharsets.UTF_8));
             }
-            
-            // requiresNickname 플래그 추가
-            if (authResponse.getRequiresNickname() != null && authResponse.getRequiresNickname()) {
+            if (result.getAuthResponse().getRequiresNickname() != null && result.getAuthResponse().getRequiresNickname()) {
                 uriBuilder.queryParam("requiresNickname", "true");
             }
             
             String targetUrl = uriBuilder.build().toUriString();
-            
             return targetUrl;
         } catch (Exception e) {
             log.error("OAuth2 user processing failed", e);

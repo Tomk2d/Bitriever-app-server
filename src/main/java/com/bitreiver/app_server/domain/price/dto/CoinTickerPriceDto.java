@@ -134,8 +134,8 @@ public class CoinTickerPriceDto {
         BigDecimal quoteVolume = parseBigDecimal(ticker.getQuoteVolume());
         BigDecimal targetVolume = parseBigDecimal(ticker.getTargetVolume());
         
-        // marketCode 생성: target_currency + "-" + quote_currency = "BTC-KRW"
-        String market = ticker.getTargetCurrency() + "-" + ticker.getQuoteCurrency();
+        // DB/클라이언트와 동일한 형식: quote-target = "KRW-BTC" (fetch-server CoinoneServiceImpl marketCode와 일치)
+        String market = (ticker.getQuoteCurrency() + "-" + ticker.getTargetCurrency()).toUpperCase();
         
         // 전일 종가 대비 변화 계산
         BigDecimal changePrice = null;
