@@ -9,7 +9,7 @@ import lombok.Getter;
 @Schema(description = "거래소 자격증명 요청")
 public class ExchangeCredentialRequest {
     
-    @Schema(description = "거래소 타입 코드", example = "1", required = true, allowableValues = {"1", "2", "3", "11", "12", "13", "14"})
+    @Schema(description = "거래소 타입 코드 (1:업비트, 2:빗썸, 3:코인원, 11:바이낸스, 12:바이빗, 13:코인베이스, 14:OKX)", example = "1", required = true, allowableValues = {"1", "2", "3", "11", "12", "13", "14"})
     @NotNull(message = "거래소는 필수입니다.")
     private Short exchangeProvider;
     
