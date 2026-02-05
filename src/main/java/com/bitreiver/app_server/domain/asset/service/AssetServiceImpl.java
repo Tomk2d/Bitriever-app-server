@@ -104,7 +104,7 @@ public class AssetServiceImpl implements AssetService {
             // 2. 거래내역 동기화 비동기 요청 (자산 동기화와 별도로 진행)
             Map<String, Object> tradingRequestBody = new HashMap<>();
             tradingRequestBody.put("user_id", userId.toString());
-            tradingRequestBody.put("exchanges", List.of("UPBIT", "COINONE"));  // 지원하는 모든 거래소
+            tradingRequestBody.put("exchanges", List.of("UPBIT", "BITHUMB", "COINONE"));  // 지원하는 모든 거래소
             tradingRequestBody.put("callback_url", CALLBACK_URL);
             
             String asyncTradingUrl = fetchServerUrl + "/api/user/updateTradingHistory/async";

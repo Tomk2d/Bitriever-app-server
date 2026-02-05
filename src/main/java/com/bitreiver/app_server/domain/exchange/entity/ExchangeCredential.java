@@ -12,16 +12,18 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "exchange_credentials")
+@IdClass(ExchangeCredentialId.class)
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExchangeCredential {
-    
+
     @Id
     @Column(name = "user_id", columnDefinition = "uuid")
     private UUID userId;
-    
+
+    @Id
     @Column(name = "exchange_provider", nullable = false)
     private Short exchangeProvider;
     
