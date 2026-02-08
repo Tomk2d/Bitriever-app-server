@@ -42,6 +42,8 @@ public class SyncCallbackController {
                 handleAssetSyncCallback(userId, callbackData, success, message);
             } else if ("TRADING_HISTORY".equals(syncType)) {
                 handleTradingHistorySyncCallback(userId, callbackData, success, message);
+            } else if ("EXCHANGE_REGISTER_SYNC".equals(syncType)) {
+                handleExchangeRegisterSyncCallback(userId, callbackData, success, message);
             }
             
             return ResponseEntity.ok(ApiResponse.success(
@@ -126,6 +128,31 @@ public class SyncCallbackController {
             }
         } catch (Exception e) {
             log.error("거래내역 동기화 알림 생성 실패: userId={}, error={}", userId, e.getMessage());
+        }
+    }
+
+    private void handleExchangeRegisterSyncCallback(UUID userId, Map<String, Object> callbackData,
+                                                     Boolean success, String message) {
+        try {
+            // 성공 시에만 알림 전송 (실패는 모달 빨간 글씨로 표시되므로 SSE 알림 없음)
+            if (!Boolean.TRUE.equals(success)) {
+                return;
+            }
+            String exchangeName = (String) callbackData.get("exchange_name");
+            if (exchangeName == null) {
+                exchangeName = "거래소";
+            }
+            String title = exchangeName + " 거래소 연동에 성공했습니다.";
+            String content = message != null ? message : title;
+            notificationService.createNotification(
+                userId,
+                NotificationType.USER_UPDATE,
+                title,
+                content,
+                null
+            );
+        } catch (Exception e) {
+            log.error("거래소 연동 알림 생성 실패: userId={}, error={}", userId, e.getMessage());
         }
     }
 }

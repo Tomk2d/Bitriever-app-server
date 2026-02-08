@@ -2,6 +2,8 @@ package com.bitreiver.app_server.domain.exchange.controller;
 
 import com.bitreiver.app_server.domain.exchange.dto.ExchangeCredentialRequest;
 import com.bitreiver.app_server.domain.exchange.dto.ExchangeCredentialResponse;
+import com.bitreiver.app_server.domain.exchange.dto.RegisterAndSyncStartResponse;
+import com.bitreiver.app_server.domain.exchange.dto.RegisterAndSyncStatusResponse;
 import com.bitreiver.app_server.domain.exchange.service.ExchangeCredentialService;
 import com.bitreiver.app_server.global.common.exception.CustomException;
 import com.bitreiver.app_server.global.common.exception.ErrorCode;
@@ -15,6 +17,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,23 +34,40 @@ public class ExchangeCredentialController {
 
     private final ExchangeCredentialService exchangeCredentialService;
 
-    @Operation(summary = "거래소 자격증명 등록/수정", description = "해당 거래소 자격증명을 등록하거나, 이미 있으면 수정합니다. 사용자당 거래소별로 여러 개 등록 가능합니다.")
+    @Operation(summary = "거래소 자격증명 등록 및 연동", description = "자격증명을 등록하고 해당 거래소만 자산·매매내역·수익률 연동을 비동기로 수행합니다. 202와 job_id를 반환하므로, GET /register-status 로 폴링하여 결과를 확인하세요.")
     @ApiResponses(value = {
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "등록/수정 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "처리 시작됨 (job_id로 상태 조회)"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 입력"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요")
     })
     @SecurityRequirement(name = "JWT")
     @PostMapping
-    public ApiResponse<ExchangeCredentialResponse> saveCredential(
+    public ResponseEntity<ApiResponse<RegisterAndSyncStartResponse>> saveCredential(
         Authentication authentication,
         @Valid @RequestBody ExchangeCredentialRequest request
     ) {
         UUID userId = UUID.fromString(authentication.getName());
-        log.info("거래소 자격증명 저장 요청 - userId: {}, exchangeProvider: {}", userId, request.getExchangeProvider());
-        ExchangeCredentialResponse response = exchangeCredentialService.saveCredential(userId, request);
-        log.info("거래소 자격증명 저장 완료 - userId: {}", userId);
-        return ApiResponse.success(response, "거래소 자격증명이 저장되었습니다.");
+        log.info("거래소 자격증명 등록 요청 (비동기) - userId: {}, exchangeProvider: {}", userId, request.getExchangeProvider());
+        RegisterAndSyncStartResponse response = exchangeCredentialService.startRegisterAndSync(userId, request);
+        log.info("거래소 자격증명 등록 시작 - userId: {}, jobId: {}", userId, response.getJobId());
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+            .body(ApiResponse.success(response, "등록 및 연동이 시작되었습니다. 상태는 register-status로 조회하세요."));
+    }
+
+    @Operation(summary = "등록·연동 작업 상태 조회 (폴링용)", description = "job_id로 비동기 등록·연동 결과를 조회합니다.")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공 (status: PROCESSING | SUCCESS | FAILED)"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "job 없음 또는 만료")
+    })
+    @SecurityRequirement(name = "JWT")
+    @GetMapping("/register-status")
+    public ApiResponse<RegisterAndSyncStatusResponse> getRegisterStatus(
+        Authentication authentication,
+        @Parameter(description = "등록 시 반환된 job_id", required = true, in = ParameterIn.QUERY)
+        @RequestParam("job_id") String jobId
+    ) {
+        RegisterAndSyncStatusResponse status = exchangeCredentialService.getRegisterStatus(jobId);
+        return ApiResponse.success(status, "상태 조회 완료");
     }
 
     @Operation(summary = "거래소 자격증명 조회", description = "exchangeProvider가 있으면 해당 거래소 1건, 없으면 연동된 모든 거래소 목록을 반환합니다.")

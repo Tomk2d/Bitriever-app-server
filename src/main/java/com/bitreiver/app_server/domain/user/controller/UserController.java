@@ -5,6 +5,7 @@ import com.bitreiver.app_server.domain.user.dto.LogoutRequest;
 import com.bitreiver.app_server.domain.user.dto.OAuth2CodePayload;
 import com.bitreiver.app_server.domain.user.dto.OAuth2TokenRequest;
 import com.bitreiver.app_server.domain.user.dto.SetNicknameRequest;
+import com.bitreiver.app_server.domain.user.dto.SetProfileUrlRequest;
 import com.bitreiver.app_server.domain.user.dto.UserLoginRequest;
 import com.bitreiver.app_server.domain.user.dto.UserResponse;
 import com.bitreiver.app_server.domain.user.dto.UserSignUpRequest;
@@ -183,6 +184,22 @@ public class UserController {
         UUID userId = UUID.fromString(authentication.getName());
         userService.setNickname(userId, request.getNickname());
         return ApiResponse.success(null, "닉네임이 설정되었습니다.");
+    }
+
+    @Operation(summary = "프로필 이미지 변경", description = "사용자 프로필 이미지를 변경합니다.")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "변경 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 프로필 값"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요")
+    })
+    @SecurityRequirement(name = "JWT")
+    @PostMapping("/set-profile-url")
+    public ApiResponse<Void> setProfileUrl(
+            Authentication authentication,
+            @Valid @RequestBody SetProfileUrlRequest request) {
+        UUID userId = UUID.fromString(authentication.getName());
+        userService.setProfileUrl(userId, request.getProfileUrl());
+        return ApiResponse.success(null, "프로필이 변경되었습니다.");
     }
 }
 
