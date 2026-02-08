@@ -289,24 +289,31 @@ public class UserServiceImpl implements UserService {
     public void setNickname(UUID userId, String nickname) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        
-        // 임시 닉네임이 아닌 경우 에러 (이미 사용자가 설정한 닉네임)
-        if (user.getNickname() != null && 
-            !user.getNickname().isEmpty() && 
-            !user.getNickname().startsWith("user_")) {
-            throw new CustomException(ErrorCode.BAD_REQUEST);
+
+        // 동일 닉네임이면 변경 없음
+        if (nickname.equals(user.getNickname())) {
+            return;
         }
-        
+
         // 닉네임 유효성 검사
         validateNickname(nickname);
-        
-        // 닉네임 중복 확인
+
+        // 닉네임 중복 확인 (다른 사용자가 이미 사용 중인 경우만)
         if (userRepository.existsByNickname(nickname)) {
             throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
         }
-        
-        // 닉네임 설정
+
+        // 닉네임 설정/변경
         user.setNickname(nickname);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void setProfileUrl(UUID userId, String profileUrl) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        user.setProfileUrl(profileUrl);
         userRepository.save(user);
     }
 }

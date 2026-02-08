@@ -1,11 +1,14 @@
 package com.bitreiver.app_server.domain.asset.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bitreiver.app_server.domain.asset.dto.AssetResponse;
 import com.bitreiver.app_server.domain.asset.entity.Asset;
 import com.bitreiver.app_server.domain.asset.repository.AssetRepository;
 import com.bitreiver.app_server.domain.coin.dto.CoinResponse;
 import com.bitreiver.app_server.domain.coin.entity.Coin;
 import com.bitreiver.app_server.domain.coin.repository.CoinRepository;
+import com.bitreiver.app_server.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +29,9 @@ public class AssetServiceImpl implements AssetService {
     
     private final AssetRepository assetRepository;
     private final CoinRepository coinRepository;
+    private final UserRepository userRepository;
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
     
     @Value("${external.fetch.server.url}")
     private String fetchServerUrl;
@@ -78,6 +83,24 @@ public class AssetServiceImpl implements AssetService {
             })
             .toList();
     }
+
+    /**
+     * users.connected_exchanges(JSON)에서 거래소 이름 목록 추출 (등록된 거래소만)
+     */
+    private List<String> getConnectedExchangeNames(UUID userId) {
+        return userRepository.findById(userId)
+            .map(user -> {
+                String json = user.getConnectedExchanges();
+                if (json == null || json.isBlank()) return List.<String>of();
+                try {
+                    return objectMapper.readValue(json, new TypeReference<>() {});
+                } catch (Exception e) {
+                    log.warn("connected_exchanges 파싱 실패: userId={}, error={}", userId, e.getMessage());
+                    return List.<String>of();
+                }
+            })
+            .orElse(List.of());
+    }
     
     /**
      * 비동기 자산 및 거래내역 동기화 요청
@@ -101,15 +124,17 @@ public class AssetServiceImpl implements AssetService {
         }
         
         try {
-            // 2. 거래내역 동기화 비동기 요청 (자산 동기화와 별도로 진행)
-            Map<String, Object> tradingRequestBody = new HashMap<>();
-            tradingRequestBody.put("user_id", userId.toString());
-            tradingRequestBody.put("exchanges", List.of("UPBIT", "BITHUMB", "COINONE"));  // 지원하는 모든 거래소
-            tradingRequestBody.put("callback_url", CALLBACK_URL);
-            
-            String asyncTradingUrl = fetchServerUrl + "/api/user/updateTradingHistory/async";
-            restTemplate.postForEntity(asyncTradingUrl, tradingRequestBody, Map.class);
-            
+            // 2. 거래내역 동기화 비동기 요청 (connected_exchanges에 포함된 거래소만)
+            List<String> connectedExchanges = getConnectedExchangeNames(userId);
+            if (!connectedExchanges.isEmpty()) {
+                Map<String, Object> tradingRequestBody = new HashMap<>();
+                tradingRequestBody.put("user_id", userId.toString());
+                tradingRequestBody.put("exchanges", connectedExchanges);
+                tradingRequestBody.put("callback_url", CALLBACK_URL);
+
+                String asyncTradingUrl = fetchServerUrl + "/api/user/updateTradingHistory/async";
+                restTemplate.postForEntity(asyncTradingUrl, tradingRequestBody, Map.class);
+            }
         } catch (Exception e) {
             log.error("비동기 거래내역 동기화 요청 실패: userId={}, error={}", userId, e.getMessage(), e);
         }

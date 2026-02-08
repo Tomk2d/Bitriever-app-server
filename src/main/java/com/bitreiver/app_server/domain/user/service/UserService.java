@@ -17,5 +17,6 @@ public interface UserService {
     boolean checkNicknameAvailable(String nickname);
     UserResponse getCurrentUser(UUID userId);
     void setNickname(UUID userId, String nickname); // SNS 회원가입 시 닉네임 설정
+    void setProfileUrl(UUID userId, String profileUrl);
 }
 
