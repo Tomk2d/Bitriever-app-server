@@ -42,7 +42,10 @@ public enum ErrorCode {
     
     // 매매 일지
     DIARY_NOT_FOUND(HttpStatus.NOT_FOUND, "DIARY_NOT_FOUND", "매매 일지를 찾을 수 없습니다."),
-    DIARY_ALREADY_EXISTS(HttpStatus.CONFLICT, "DIARY_ALREADY_EXISTS", "해당 매매 내역에 대한 일지가 이미 존재합니다.");
+    DIARY_ALREADY_EXISTS(HttpStatus.CONFLICT, "DIARY_ALREADY_EXISTS", "해당 매매 내역에 대한 일지가 이미 존재합니다."),
+
+    // 문의
+    INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "INQUIRY_NOT_FOUND", "문의를 찾을 수 없습니다.");
     
     private final HttpStatus httpStatus;
     private final String code;
