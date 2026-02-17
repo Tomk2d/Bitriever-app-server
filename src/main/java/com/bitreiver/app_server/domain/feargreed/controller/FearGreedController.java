@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -90,6 +91,43 @@ public class FearGreedController {
     public ApiResponse<List<FearGreedResponse>> getAllHistory() {
         List<FearGreedResponse> response = fearGreedService.getAllHistory();
         return ApiResponse.success(response, "전체 히스토리 조회 성공");
+    }
+
+    @Operation(
+        summary = "기간 범위 공포/탐욕 지수 조회(DB)",
+        description = "DB(fear_greed_indices)에서 start~end 기간 범위의 공포/탐욕 지수를 조회합니다. 날짜 형식: yyyy-MM-dd"
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "조회 성공"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "잘못된 날짜 형식 또는 기간 범위 오류"
+        )
+    })
+    @GetMapping("/range")
+    public ApiResponse<List<FearGreedResponse>> getRangeFromDb(
+        @Parameter(
+            name = "start",
+            description = "시작 날짜 (yyyy-MM-dd 형식)",
+            example = "2025-12-01",
+            required = true,
+            in = ParameterIn.QUERY
+        )
+        @RequestParam("start") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+        @Parameter(
+            name = "end",
+            description = "종료 날짜 (yyyy-MM-dd 형식)",
+            example = "2025-12-31",
+            required = true,
+            in = ParameterIn.QUERY
+        )
+        @RequestParam("end") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end
+    ) {
+        List<FearGreedResponse> response = fearGreedService.getByDateRange(start, end);
+        return ApiResponse.success(response, "기간 범위 조회 성공");
     }
 }
 
