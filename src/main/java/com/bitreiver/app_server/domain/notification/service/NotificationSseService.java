@@ -1,6 +1,7 @@
 package com.bitreiver.app_server.domain.notification.service;
 
 import com.bitreiver.app_server.domain.notification.dto.NotificationResponse;
+import com.bitreiver.app_server.domain.notification.dto.TradeEvaluationEventPayload;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -77,6 +78,30 @@ public class NotificationSseService {
         }
     }
     
+    /**
+     * 매매 분석 요청 완료(성공/실패) 시 해당 사용자 SSE로 알림 전송.
+     * 날짜·시간·심볼 포함.
+     */
+    public void sendTradeEvaluationEvent(UUID userId, TradeEvaluationEventPayload payload) {
+        SseEmitter emitter = emitters.get(userId);
+        if (emitter == null) {
+            log.warn("SSE 연결이 없습니다. 매매 분석 이벤트 미전송: userId={}, tradeId={}", userId, payload.getTradeId());
+            return;
+        }
+        try {
+            String jsonData = objectMapper.writeValueAsString(payload);
+            emitter.send(SseEmitter.event()
+                .name("trade-evaluation")
+                .data(jsonData));
+        } catch (IOException e) {
+            log.error("SSE 매매 분석 이벤트 전송 실패: userId={}, tradeId={}, error={}", userId, payload.getTradeId(), e.getMessage(), e);
+            emitters.remove(userId);
+            emitter.completeWithError(e);
+        } catch (Exception e) {
+            log.error("SSE 매매 분석 이벤트 직렬화 실패: userId={}, error={}", userId, e.getMessage(), e);
+        }
+    }
+
     public void broadcastNotification(NotificationResponse notification) {
         try {
             // ObjectMapper를 사용하여 JSON으로 직렬화

@@ -91,4 +91,22 @@ public class FearGreedServiceImpl implements FearGreedService {
                 .build())
             .collect(Collectors.toList());
     }
+
+    @Override
+    public List<FearGreedResponse> getByDateRange(LocalDate start, LocalDate end) {
+        if (start == null || end == null) {
+            throw new CustomException(ErrorCode.BAD_REQUEST, "start/end 값은 필수입니다.");
+        }
+        if (start.isAfter(end)) {
+            throw new CustomException(ErrorCode.INVALID_DATE_RANGE);
+        }
+
+        return fearGreedIndexRepository.findAllByDateBetweenOrderByDateAsc(start, end).stream()
+            .map(index -> FearGreedResponse.builder()
+                .id(index.getId())
+                .date(index.getDate())
+                .value(index.getValue())
+                .build())
+            .collect(Collectors.toList());
+    }
 }

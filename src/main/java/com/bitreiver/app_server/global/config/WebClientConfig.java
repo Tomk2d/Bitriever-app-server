@@ -23,6 +23,29 @@ public class WebClientConfig {
     @Value("${external.coinone.api.url:https://api.coinone.co.kr}")
     private String coinoneApiUrl;
 
+    @Value("${external.ai-server.url:http://localhost:8000}")
+    private String aiServerUrl;
+
+    @Bean
+    public WebClient aiServerWebClient() {
+        ConnectionProvider connectionProvider = ConnectionProvider.builder("ai-server")
+            .maxConnections(20)
+            .maxIdleTime(Duration.ofSeconds(30))
+            .maxLifeTime(Duration.ofSeconds(120))
+            .build();
+        HttpClient httpClient = HttpClient.create(connectionProvider)
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
+            .responseTimeout(Duration.ofSeconds(120))
+            .doOnConnected(conn ->
+                conn.addHandlerLast(new ReadTimeoutHandler(120, TimeUnit.SECONDS))
+                    .addHandlerLast(new WriteTimeoutHandler(10, TimeUnit.SECONDS))
+            );
+        return WebClient.builder()
+            .baseUrl(aiServerUrl)
+            .clientConnector(new ReactorClientHttpConnector(httpClient))
+            .build();
+    }
+
     @Bean
     public WebClient upbitTickerWebClient() {
         // 연결 풀 설정

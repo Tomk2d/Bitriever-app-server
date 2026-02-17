@@ -9,5 +9,6 @@ public interface FearGreedService {
     FearGreedResponse getByDate(LocalDate date);
     FearGreedResponse getToday();
     List<FearGreedResponse> getAllHistory();
+    List<FearGreedResponse> getByDateRange(LocalDate start, LocalDate end);
 }
 
