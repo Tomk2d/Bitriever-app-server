@@ -74,7 +74,6 @@ public class RedisCacheStringService extends RedisCacheBaseService {
         try {
             String jsonValue = serialize(value);
             stringRedisTemplate.opsForValue().set(key, jsonValue, Duration.ofSeconds(ttlSeconds));
-            log.debug("캐시 저장 완료 - key: {}, ttl: {}초", key, ttlSeconds);
         } catch (Exception e) {
             log.warn("캐시 저장 중 오류 발생 - key: {}, error: {}", key, e.getMessage());
         }
