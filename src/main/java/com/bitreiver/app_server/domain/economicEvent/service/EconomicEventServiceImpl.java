@@ -72,7 +72,6 @@ public class EconomicEventServiceImpl implements EconomicEventService {
     private void cacheTodayEventCount(String redisKey, int count) {
         try {
             redisCacheService.set(redisKey, count, TTL_SECONDS);
-            log.info("DB 조회 후 Redis 캐시 저장 완료 - key: {}, count: {}", redisKey, count);
         } catch (Exception e) {
             log.warn("Redis 캐시 저장 실패 - key: {}, error: {}", redisKey, e.getMessage());
         }
@@ -109,7 +108,6 @@ public class EconomicEventServiceImpl implements EconomicEventService {
                 .collect(Collectors.toList());
             
             redisCacheService.set(redisKey, redisDtoList, TTL_SECONDS);
-            log.info("DB 조회 후 Redis 캐시 저장 완료 - key: {}, 개수: {}", redisKey, redisDtoList.size());
             
             return events.stream()
                 .map(EconomicEventResponse::from)

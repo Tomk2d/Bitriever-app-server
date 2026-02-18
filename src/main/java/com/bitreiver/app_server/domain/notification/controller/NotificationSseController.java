@@ -26,8 +26,9 @@ public class NotificationSseController {
         try {
             // 토큰 검증
             if (!jwtTokenProvider.validateToken(token)) {
-                SseEmitter emitter = new SseEmitter(0L); // 즉시 종료
-                emitter.completeWithError(new RuntimeException("Invalid token"));
+                log.warn("SSE 연결 거절: JWT 만료 또는 유효하지 않음");
+                SseEmitter emitter = new SseEmitter(0L);
+                emitter.complete();
                 return emitter;
             }
             
@@ -37,8 +38,9 @@ public class NotificationSseController {
             return notificationSseService.createConnection(userId);
             
         } catch (Exception e) {
+            log.warn("SSE 연결 실패: {}", e.getMessage());
             SseEmitter emitter = new SseEmitter(0L);
-            emitter.completeWithError(e);
+            emitter.complete();
             return emitter;
         }
     }

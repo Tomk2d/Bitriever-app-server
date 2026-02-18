@@ -5,8 +5,10 @@ import com.bitreiver.app_server.domain.coin.repository.CoinRepository;
 import com.bitreiver.app_server.domain.price.dto.CoinTickerPriceDto;
 import com.bitreiver.app_server.domain.price.dto.CoinoneTickerResponse;
 import com.bitreiver.app_server.domain.price.dto.UpbitTickerResponse;
+import com.bitreiver.app_server.domain.price.event.TickerPricesUpdatedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -29,16 +31,19 @@ public class CoinPriceTickerService {
     private final WebClient coinoneTickerWebClient;
     private final CoinPriceWebSocketService coinPriceWebSocketService;
     private final CoinRepository coinRepository;
-    
+    private final ApplicationEventPublisher eventPublisher;
+
     public CoinPriceTickerService(
             @Qualifier("upbitTickerWebClient") WebClient upbitTickerWebClient,
             @Qualifier("coinoneTickerWebClient") WebClient coinoneTickerWebClient,
             CoinPriceWebSocketService coinPriceWebSocketService,
-            CoinRepository coinRepository) {
+            CoinRepository coinRepository,
+            ApplicationEventPublisher eventPublisher) {
         this.upbitTickerWebClient = upbitTickerWebClient;
         this.coinoneTickerWebClient = coinoneTickerWebClient;
         this.coinPriceWebSocketService = coinPriceWebSocketService;
         this.coinRepository = coinRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     // 각 quote_currency별로 진행 중인 요청 추적 (이전 요청 취소용)
@@ -113,6 +118,8 @@ public class CoinPriceTickerService {
                 if (!changedPrices.isEmpty()) {
                     coinPriceWebSocketService.broadcastAllCoinPrices(changedPrices);
                 }
+                // ticker 수집 완료 시 당일 일봉 Redis 병합 트리거
+                eventPublisher.publishEvent(new TickerPricesUpdatedEvent(this));
             })
             .doOnError(error -> log.error("{} 마켓 주가 조회 실패", quoteCurrency, error))
             .onErrorResume(error -> {
@@ -242,6 +249,8 @@ public class CoinPriceTickerService {
                 if (!changedPrices.isEmpty()) {
                     coinPriceWebSocketService.broadcastAllCoinPrices(changedPrices);
                 }
+                // ticker 수집 완료 시 당일 일봉 Redis 병합 트리거
+                eventPublisher.publishEvent(new TickerPricesUpdatedEvent(this));
             })
             .doOnError(error -> log.error("코인원 KRW 마켓 주가 조회 실패", error))
             .onErrorResume(error -> {
