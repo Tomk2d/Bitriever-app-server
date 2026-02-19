@@ -38,7 +38,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         this.oAuth2CodeService = oAuth2CodeService;
     }
     
-    @Value("${oauth2.redirect.uri:http://localhost:3000/api/auth/callback}")
+    @Value("${oauth2.redirect.uri}")
     private String redirectUri;
 
     private static final String OAUTH2_REDIRECT_URI_REQUIRED_SENTINEL = "__OAUTH2_REDIRECT_URI_REQUIRED__";
