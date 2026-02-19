@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
     
-    @Value("${oauth2.redirect.uri:http://localhost:3000/api/auth/callback}")
+    @Value("${oauth2.redirect.uri}")
     private String redirectUri;
 
     private static final String OAUTH2_REDIRECT_URI_REQUIRED_SENTINEL = "__OAUTH2_REDIRECT_URI_REQUIRED__";

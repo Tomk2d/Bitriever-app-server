@@ -22,12 +22,18 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
@@ -42,6 +48,24 @@ public class UserController {
     private final UserService userService;
     private final AuthCookieHelper authCookieHelper;
     private final OAuth2CodeService oAuth2CodeService;
+
+    @Value("${oauth2.redirect.uri}")
+    private String oauth2RedirectUri;
+
+    /**
+     * 카카오/네이버/구글에 api/auth/callback/{provider}가 잘못 등록된 경우 백엔드로 요청이 옴.
+     * 이 경로를 처리해 프론트 로그인 페이지로 리다이렉트하고, 올바른 콜백 주소를 안내.
+     */
+    @GetMapping("/callback/{provider}")
+    public ResponseEntity<Void> wrongOAuthCallback(
+            @PathVariable String provider,
+            @RequestParam(value = "code", required = false) String code,
+            @RequestParam(value = "state", required = false) String state) {
+        String message = "OAuth 콜백 주소가 잘못 등록되었습니다. " + provider + " 개발자 콘솔 Redirect URI를 https://api.bitriever.com/login/oauth2/code/" + provider + " 로 등록하세요.";
+        String loginUrl = oauth2RedirectUri.replace("/api/auth/callback", "/login")
+                + "?error=wrong_callback&message=" + URLEncoder.encode(message, StandardCharsets.UTF_8);
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(loginUrl)).build();
+    }
     
     @Operation(summary = "OAuth2 code 교환", description = "OAuth2 성공 시 발급된 code로 access token과 refresh token(쿠키)을 발급받습니다.")
     @ApiResponses(value = {
