@@ -1,6 +1,11 @@
 package com.bitreiver.app_server.domain.community.controller;
 
-import com.bitreiver.app_server.domain.community.dto.*;
+import com.bitreiver.app_server.domain.community.dto.CommunityListResponse;
+import com.bitreiver.app_server.domain.community.dto.CommunityRequest;
+import com.bitreiver.app_server.domain.community.dto.CommunityResponse;
+import com.bitreiver.app_server.domain.community.dto.CommunitySearchByHashtagRequest;
+import com.bitreiver.app_server.domain.community.dto.CommunitySearchRequest;
+import com.bitreiver.app_server.domain.community.dto.CommunityReactionRequest;
 import com.bitreiver.app_server.domain.community.enums.Category;
 import com.bitreiver.app_server.domain.community.enums.ReactionType;
 import com.bitreiver.app_server.domain.community.service.CommunityService;
@@ -131,6 +136,21 @@ public class CommunityController {
     ) {
         UUID userId = authentication != null ? UUID.fromString(authentication.getName()) : null;
         PageResponse<CommunityListResponse> response = communityService.searchCommunities(request, userId);
+        return ApiResponse.success(response);
+    }
+
+    @Operation(summary = "단일 해시태그 검색", description = "해시태그 1개로 게시글을 검색합니다. (인증 불필요, GIN 인덱스 활용)")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "검색 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "해시태그 필수")
+    })
+    @GetMapping("/search/by-hashtag")
+    public ApiResponse<PageResponse<CommunityListResponse>> searchCommunitiesByHashtag(
+        @Valid @ModelAttribute CommunitySearchByHashtagRequest request,
+        Authentication authentication
+    ) {
+        UUID userId = authentication != null ? UUID.fromString(authentication.getName()) : null;
+        PageResponse<CommunityListResponse> response = communityService.searchCommunitiesByHashtag(request, userId);
         return ApiResponse.success(response);
     }
     
