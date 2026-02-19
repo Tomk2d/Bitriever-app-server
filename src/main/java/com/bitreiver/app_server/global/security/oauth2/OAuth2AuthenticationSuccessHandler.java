@@ -40,6 +40,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     
     @Value("${oauth2.redirect.uri:http://localhost:3000/api/auth/callback}")
     private String redirectUri;
+
+    private static final String OAUTH2_REDIRECT_URI_REQUIRED_SENTINEL = "__OAUTH2_REDIRECT_URI_REQUIRED__";
     
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -57,6 +59,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     
     protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) {
+        ensureRedirectUriConfigured();
         try {
             Object principal = authentication.getPrincipal();
             OAuth2UserInfo userInfo;
@@ -164,6 +167,15 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         return name;
     }
     
+    private void ensureRedirectUriConfigured() {
+        if (redirectUri == null || redirectUri.isBlank()
+            || redirectUri.contains(OAUTH2_REDIRECT_URI_REQUIRED_SENTINEL)) {
+            log.error("oauth2.redirect.uri is not set for production. Set OAUTH2_REDIRECT_URI to your frontend callback URL (e.g. https://yourdomain.com/api/auth/callback).");
+            throw new IllegalStateException(
+                "OAUTH2_REDIRECT_URI must be set in production. Current value: " + redirectUri);
+        }
+    }
+
     private OAuth2UserInfo getOAuth2UserInfoFromAttributes(String registrationId, java.util.Map<String, Object> attributes) {
         com.bitreiver.app_server.domain.user.enums.SnsProvider provider = 
             com.bitreiver.app_server.domain.user.enums.SnsProvider.fromRegistrationId(registrationId);
