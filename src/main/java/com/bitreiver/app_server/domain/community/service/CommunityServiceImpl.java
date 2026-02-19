@@ -3,6 +3,7 @@ package com.bitreiver.app_server.domain.community.service;
 import com.bitreiver.app_server.domain.community.dto.CommunityListResponse;
 import com.bitreiver.app_server.domain.community.dto.CommunityRequest;
 import com.bitreiver.app_server.domain.community.dto.CommunityResponse;
+import com.bitreiver.app_server.domain.community.dto.CommunitySearchByHashtagRequest;
 import com.bitreiver.app_server.domain.community.dto.CommunitySearchRequest;
 import com.bitreiver.app_server.domain.community.entity.Community;
 import com.bitreiver.app_server.domain.community.enums.Category;
@@ -213,6 +214,53 @@ public class CommunityServiceImpl implements CommunityService {
             })
             .collect(Collectors.toList());
         
+        return PageResponse.of(content, request.getPage(), request.getSize(), communities.getTotalElements());
+    }
+
+    @Override
+    public PageResponse<CommunityListResponse> searchCommunitiesByHashtag(CommunitySearchByHashtagRequest request, UUID userId) {
+        String hashtag = request.getHashtag().trim();
+        if (hashtag.isEmpty()) {
+            throw new CustomException(ErrorCode.BAD_REQUEST, "해시태그를 입력해주세요.");
+        }
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
+        Page<Community> communities;
+        if (request.getCategory() != null && !request.getCategory().isBlank()) {
+            Category category = Category.fromCode(request.getCategory());
+            communities = communityRepository.findByCategoryAndHashtag(category.getCode(), hashtag, pageable);
+        } else {
+            communities = communityRepository.findByHashtagsContaining(hashtag, pageable);
+        }
+        List<CommunityListResponse> content = communities.getContent().stream()
+            .map(community -> {
+                User user = userRepository.findById(community.getUserId())
+                    .orElse(null);
+                long likeCount = communityReactionService.getLikeCount(community.getId());
+                long dislikeCount = communityReactionService.getDislikeCount(community.getId());
+                long commentCount = communityCommentService.getCommentCount(community.getId());
+                ReactionType userReaction = userId != null
+                    ? communityReactionService.getUserReaction(userId, community.getId())
+                    : null;
+                String thumbnailImageUrl = extractFirstImagePath(community.getContent());
+                String previewText = extractFirstTextPreview(community.getContent());
+                return CommunityListResponse.builder()
+                    .id(community.getId())
+                    .userId(community.getUserId())
+                    .userNickname(user != null ? user.getNickname() : null)
+                    .userProfileUrl(user != null ? user.getProfileUrl() : null)
+                    .category(community.getCategory() != null ? community.getCategory().getCode() : null)
+                    .title(community.getTitle())
+                    .hashtags(community.getHashtags())
+                    .likeCount(likeCount)
+                    .dislikeCount(dislikeCount)
+                    .commentCount(commentCount)
+                    .userReaction(userReaction != null ? userReaction.getCode() : null)
+                    .thumbnailImageUrl(thumbnailImageUrl)
+                    .previewText(previewText)
+                    .createdAt(community.getCreatedAt())
+                    .build();
+            })
+            .collect(Collectors.toList());
         return PageResponse.of(content, request.getPage(), request.getSize(), communities.getTotalElements());
     }
     
