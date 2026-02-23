@@ -74,7 +74,8 @@ public class SecurityConfig {
                     "/api/sse/**",  // SSE 엔드포인트 (인증 필요)
                     "/api/notifications/**",  // 알림 API (인증 필요)
                     "/ws/**",       // WebSocket 인증 없이 공개 (주가 데이터)
-                    "/health", 
+                    "/health",
+                    "/actuator/**",
                     "/",
                     "/docs",
                     "/docs/**",
