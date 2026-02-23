@@ -62,6 +62,13 @@ dependencies {
 	// MinIO (S3 호환)
     implementation 'io.minio:minio:8.5.7'
 	
+	// Actuator & Prometheus metrics
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+	
+	// Loki (로그 수집)
+	runtimeOnly 'com.github.loki4j:loki-logback-appender:1.5.1'
+	
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
