@@ -8,6 +8,7 @@ import com.bitreiver.app_server.domain.notification.repository.NotificationRepos
 import com.bitreiver.app_server.global.common.dto.PageResponse;
 import com.bitreiver.app_server.global.common.exception.CustomException;
 import com.bitreiver.app_server.global.common.exception.ErrorCode;
+import com.bitreiver.app_server.global.util.TimeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -35,7 +36,7 @@ public class NotificationServiceImpl implements NotificationService {
             .content(content)
             .metadata(metadata)
             .read(false)
-            .createdAt(LocalDateTime.now())
+            .createdAt(TimeUtil.nowKorea())
             .build();
         
         Notification saved = notificationRepository.save(notification);
@@ -86,7 +87,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void markAsRead(Long notificationId, UUID userId) {
-        int updated = notificationRepository.markAsRead(notificationId, userId, LocalDateTime.now());
+        int updated = notificationRepository.markAsRead(notificationId, userId, TimeUtil.nowKorea());
         if (updated == 0) {
             throw new CustomException(ErrorCode.NOT_FOUND, "알림을 찾을 수 없습니다.");
         }
@@ -95,6 +96,6 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void markAllAsRead(UUID userId) {
-        int updated = notificationRepository.markAllAsRead(userId, LocalDateTime.now());
+        int updated = notificationRepository.markAllAsRead(userId, TimeUtil.nowKorea());
     }
 }
