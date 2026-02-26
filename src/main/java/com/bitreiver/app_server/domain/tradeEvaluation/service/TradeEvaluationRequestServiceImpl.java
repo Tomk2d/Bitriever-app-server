@@ -14,6 +14,7 @@ import com.bitreiver.app_server.domain.notification.service.NotificationService;
 import com.bitreiver.app_server.domain.notification.service.NotificationSseService;
 import com.bitreiver.app_server.global.common.exception.CustomException;
 import com.bitreiver.app_server.global.common.exception.ErrorCode;
+import com.bitreiver.app_server.global.util.TimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
@@ -164,7 +165,7 @@ public class TradeEvaluationRequestServiceImpl implements TradeEvaluationRequest
     /** DB notifications 테이블에 저장 + createNotification 내부에서 SSE 'notification' 이벤트 전송 */
     private void saveTradeEvaluationNotification(UUID userId, Integer tradeId, LocalDate targetDate, Integer coinId, TradeEvaluationJobStatus status) {
         String symbol = coinRepository.findById(coinId).map(c -> c.getSymbol()).orElse("?");
-        LocalDateTime completedAt = LocalDateTime.now();
+        LocalDateTime completedAt = TimeUtil.nowKorea();
         boolean success = status == TradeEvaluationJobStatus.COMPLETED;
         String title = success
             ? "매매 분석 완료 (" + symbol + ")"
@@ -188,7 +189,7 @@ public class TradeEvaluationRequestServiceImpl implements TradeEvaluationRequest
             .status(status)
             .tradeId(tradeId)
             .targetDate(targetDate)
-            .completedAt(LocalDateTime.now())
+            .completedAt(TimeUtil.nowKorea())
             .symbol(symbol)
             .build();
         notificationSseService.sendTradeEvaluationEvent(userId, payload);
