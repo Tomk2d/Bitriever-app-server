@@ -15,6 +15,7 @@ import com.bitreiver.app_server.global.common.exception.CustomException;
 import com.bitreiver.app_server.global.common.exception.ErrorCode;
 import com.bitreiver.app_server.global.common.response.ApiResponse;
 import com.bitreiver.app_server.global.security.AuthCookieHelper;
+import com.bitreiver.app_server.global.security.RequestOriginValidator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -47,6 +48,7 @@ public class UserController {
     
     private final UserService userService;
     private final AuthCookieHelper authCookieHelper;
+    private final RequestOriginValidator requestOriginValidator;
     private final OAuth2CodeService oAuth2CodeService;
 
     @Value("${oauth2.redirect.uri}")
@@ -135,6 +137,7 @@ public class UserController {
     @PostMapping("/refresh")
     public ApiResponse<AuthResponse> refreshToken(HttpServletRequest httpRequest,
                                                   HttpServletResponse httpResponse) {
+        requestOriginValidator.validateOrThrow(httpRequest);
         String refreshToken = extractRefreshTokenFromCookie(httpRequest);
         if (refreshToken == null || refreshToken.isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
@@ -154,6 +157,7 @@ public class UserController {
     @PostMapping("/logout")
     public ApiResponse<Void> logout(Authentication authentication, HttpServletRequest httpRequest,
                                    HttpServletResponse httpResponse, @RequestBody(required = false) LogoutRequest request) {
+        requestOriginValidator.validateOrThrow(httpRequest);
         UUID userId = UUID.fromString(authentication.getName());
         String accessToken = null;
         if (request != null && request.getAccessToken() != null) {
