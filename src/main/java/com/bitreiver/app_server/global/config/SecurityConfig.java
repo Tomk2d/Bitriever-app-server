@@ -9,6 +9,7 @@ import com.bitreiver.app_server.global.security.oauth2.OAuth2AuthenticationSucce
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -24,6 +25,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -34,6 +37,8 @@ public class SecurityConfig {
     private final CustomOidcUserService customOidcUserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+    @Value("${security.cors.allowed-origins:http://localhost:3000}")
+    private String allowedOriginsProperty;
     
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
@@ -116,11 +121,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // setAllowedOriginPatterns를 사용하면 와일드카드와 credentials를 함께 사용 가능
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        List<String> allowedOrigins = Arrays.stream(allowedOriginsProperty.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .collect(Collectors.toList());
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-CSRF-Token", "X-Requested-With"));
+        configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
         // SockJS가 credentials를 포함할 수 있으므로 명시적으로 허용
         configuration.setAllowCredentials(true);
         
